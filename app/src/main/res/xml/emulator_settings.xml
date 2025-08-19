@@ -73,7 +73,7 @@
 
         <aenu.preference.SeekBarPreference app:title="@string/emulator_settings_core_spu_getllar_busy_waiting_percentage"
             app:min="0"
-            android:max="101"
+            android:max="100"
             app:showSeekBarValue="true"
             app:key="Core|SPU GETLLAR Busy Waiting Percentage" />
 

@@ -16,6 +16,7 @@
 #include "sys_memory.h"
 
 #include "util/asm.hpp"
+#include <thread>
 
 LOG_CHANNEL(sys_ppu_thread);
 

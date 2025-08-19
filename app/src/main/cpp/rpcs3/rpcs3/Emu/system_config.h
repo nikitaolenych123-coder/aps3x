@@ -42,7 +42,8 @@ struct cfg_root : cfg::node
 		cfg::_bool set_daz_and_ftz{ this, "Set DAZ and FTZ", false };
 		cfg::_enum<spu_decoder_type> spu_decoder{ this, "SPU Decoder", spu_decoder_type::llvm };
 		cfg::uint<0, 100> spu_reservation_busy_waiting_percentage{ this, "SPU Reservation Busy Waiting Percentage", 0, true };
-		cfg::uint<0, 101> spu_getllar_busy_waiting_percentage{ this, "SPU GETLLAR Busy Waiting Percentage", 100, true };
+        cfg::_bool spu_reservation_busy_waiting_enabled{ this, "SPU Reservation Busy Waiting Enabled", false, true };
+		cfg::uint<0, 100> spu_getllar_busy_waiting_percentage{ this, "SPU GETLLAR Busy Waiting Percentage", 100, true };
 		cfg::_bool spu_getllar_spin_optimization_disabled{ this, "Disable SPU GETLLAR Spin Optimization", false, true };
 		cfg::_bool spu_debug{ this, "SPU Debug" };
 		cfg::_bool mfc_debug{ this, "MFC Debug" };
@@ -351,7 +352,7 @@ struct cfg_root : cfg::node
 		cfg::_enum<CellSysutilLang> language{ this, "Language", CellSysutilLang{1} }; // CELL_SYSUTIL_LANG_ENGLISH_US
 		cfg::_enum<CellKbMappingType> keyboard_type{ this, "Keyboard Type", CellKbMappingType{0} }; // CELL_KB_MAPPING_101 = US
 		cfg::_enum<enter_button_assign> enter_button_assignment{ this, "Enter button assignment", enter_button_assign::cross };
-		//cfg::_int<-60*60*24*365*100LL, 60*60*24*365*100LL> console_time_offset{ this, "Console time offset (s)", 0 }; // console time offset, limited to +/-100years
+		cfg::_int<-60*60*24*365*100LL, 60*60*24*365*100LL> console_time_offset{ this, "Console time offset (s)", 0 }; // console time offset, limited to +/-100years
 		cfg::string system_name{this, "System Name", get_random_system_name()};
 		cfg::uint<0, umax> console_psid_high{this, "PSID high"};
 		cfg::uint<0, umax> console_psid_low{this, "PSID low"};

@@ -213,8 +213,9 @@ template <typename T, usz Align = alignof(T)>
 using atomic_be_t = atomic_t<be_t<T>, Align>;
 template <typename T, usz Align = alignof(T)>
 using atomic_le_t = atomic_t<le_t<T>, Align>;
-template<typename T>
 
+// Removes be_t<> wrapper from type be_<T> with nop fallback for unwrapped T
+template<typename T>
 struct remove_be { using type = T; };
 template<typename T>
 struct remove_be<be_t<T>> { using type = T; };
@@ -1199,7 +1200,7 @@ constexpr void write_to_ptr(U&& array, usz pos, const T& value)
 {
 	static_assert(sizeof(T) % sizeof(array[0]) == 0);
 	if (!std::is_constant_evaluated())
-		std::memcpy(&array[pos], &value, sizeof(value));
+		std::memcpy(static_cast<void*>(&array[pos]), &value, sizeof(value));
 	else
 		ensure(!"Unimplemented");
 }
@@ -1209,7 +1210,7 @@ constexpr void write_to_ptr(U&& array, const T& value)
 {
 	static_assert(sizeof(T) % sizeof(array[0]) == 0);
 	if (!std::is_constant_evaluated())
-		std::memcpy(&array[0], &value, sizeof(value));
+		std::memcpy(static_cast<void*>(&array[0]), &value, sizeof(value));
 	else
 		ensure(!"Unimplemented");
 }

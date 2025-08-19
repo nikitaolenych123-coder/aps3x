@@ -9,14 +9,7 @@
 #include "Emu/Cell/lv2/sys_fs.h"
 #include "cellJpgDec.h"
 
-#include "util/asm.hpp"
-
 LOG_CHANNEL(cellJpgDec);
-
-// Temporarily
-#ifndef _MSC_VER
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
 
 template <>
 void fmt_class_string<CellJpgDecError>::format(std::string& out, u64 arg)
@@ -42,19 +35,19 @@ void fmt_class_string<CellJpgDecError>::format(std::string& out, u64 arg)
 
 error_code cellJpgDecCreate(u32 mainHandle, u32 threadInParam, u32 threadOutParam)
 {
-	UNIMPLEMENTED_FUNC(cellJpgDec);
+	cellJpgDec.todo("cellJpgDecCreate(mainHandle=0x%x, threadInParam=0x%x, threadOutParam=0x%x)", mainHandle, threadInParam, threadOutParam);
 	return CELL_OK;
 }
 
 error_code cellJpgDecExtCreate(u32 mainHandle, u32 threadInParam, u32 threadOutParam, u32 extThreadInParam, u32 extThreadOutParam)
 {
-	UNIMPLEMENTED_FUNC(cellJpgDec);
+	cellJpgDec.todo("cellJpgDecExtCreate(mainHandle=0x%x, threadInParam=0x%x, threadOutParam=0x%x, extThreadInParam=0x%x, extThreadOutParam=0x%x)", mainHandle, threadInParam, threadOutParam, extThreadInParam, extThreadOutParam);
 	return CELL_OK;
 }
 
 error_code cellJpgDecDestroy(u32 mainHandle)
 {
-	UNIMPLEMENTED_FUNC(cellJpgDec);
+	cellJpgDec.todo("cellJpgDecDestroy(mainHandle=0x%x)", mainHandle);
 	return CELL_OK;
 }
 
@@ -76,7 +69,7 @@ error_code cellJpgDecOpen(u32 mainHandle, vm::ptr<u32> subHandle, vm::ptr<CellJp
 	case CELL_JPGDEC_FILE:
 	{
 		// Get file descriptor and size
-		const auto real_path = vfs::get(src->fileName.get_ptr());
+		const std::string real_path = vfs::get(src->fileName.get_ptr());
 		fs::file file_s(real_path);
 		if (!file_s) return CELL_JPGDEC_ERROR_OPEN_FILE;
 
@@ -127,8 +120,8 @@ error_code cellJpgDecReadHeader(u32 mainHandle, u32 subHandle, vm::ptr<CellJpgDe
 		return CELL_JPGDEC_ERROR_FATAL;
 	}
 
-	const u32& fd = subHandle_data->fd;
-	const u64& fileSize = subHandle_data->fileSize;
+	const u32 fd = subHandle_data->fd;
+	const u64 fileSize = subHandle_data->fileSize;
 	CellJpgDecInfo& current_info = subHandle_data->info;
 
 	// Write the header to buffer
@@ -158,12 +151,12 @@ error_code cellJpgDecReadHeader(u32 mainHandle, u32 subHandle, vm::ptr<CellJpgDe
 
 	u32 i = 4;
 
-	if(i >= fileSize)
+	if (i >= fileSize)
 		return CELL_JPGDEC_ERROR_HEADER;
 
-	u16 block_length = buffer[i] * 0xFF + buffer[i+1];
+	u16 block_length = buffer[i] * 0xFF + buffer[i + 1];
 
-	while(true)
+	while (true)
 	{
 		i += block_length;                                  // Increase the file index to get to the next block
 		if (i >= fileSize ||                                // Check to protect against segmentation faults
@@ -172,15 +165,15 @@ error_code cellJpgDecReadHeader(u32 mainHandle, u32 subHandle, vm::ptr<CellJpgDe
 			return CELL_JPGDEC_ERROR_HEADER;
 		}
 
-		if(buffer[i+1] == 0xC0)
+		if (buffer[i + 1] == 0xC0)
 			break;                                          // 0xFFC0 is the "Start of frame" marker which contains the file size
 
 		i += 2;                                             // Skip the block marker
-		block_length = buffer[i] * 0xFF + buffer[i+1];      // Go to the next block
+		block_length = buffer[i] * 0xFF + buffer[i + 1];    // Go to the next block
 	}
 
-	current_info.imageWidth    = buffer[i+7]*0x100 + buffer[i+8];
-	current_info.imageHeight   = buffer[i+5]*0x100 + buffer[i+6];
+	current_info.imageWidth    = buffer[i + 7] * 0x100 + buffer[i + 8];
+	current_info.imageHeight   = buffer[i + 5] * 0x100 + buffer[i + 6];
 	current_info.numComponents = 3; // Unimplemented
 	current_info.colorSpace    = CELL_JPG_RGB;
 
@@ -232,7 +225,7 @@ error_code cellJpgDecDecodeData(u32 mainHandle, u32 subHandle, vm::ptr<u8> data,
 	}
 
 	//Decode JPG file. (TODO: Is there any faster alternative? Can we do it without external libraries?)
-	int width, height, actual_components;
+	int width = 0, height = 0, actual_components = 0;
 	auto image = std::unique_ptr<unsigned char,decltype(&::free)>
 		(
 			stbi_load_from_memory(jpg.get(), ::narrow<int>(fileSize), &width, &height, &actual_components, 4),
@@ -267,18 +260,17 @@ error_code cellJpgDecDecodeData(u32 mainHandle, u32 subHandle, vm::ptr<u8> data,
 		{
 			memcpy(data.get_ptr(), image.get(), image_size);
 		}
+		break;
 	}
-	break;
-
 	case CELL_JPG_ARGB:
 	{
-		const int nComponents = 4;
+		constexpr int nComponents = 4;
 		image_size *= nComponents;
 		if (bytesPerLine > width * nComponents || flip) //check if we need padding
 		{
 			//TODO: Find out if we can't do padding without an extra copy
 			const int linesize = std::min(bytesPerLine, width * nComponents);
-			const auto output = std::make_unique<char[]>(linesize);
+			std::vector<char> output(image_size);
 			for (int i = 0; i < height; i++)
 			{
 				const int dstOffset = i * bytesPerLine;
@@ -290,33 +282,32 @@ error_code cellJpgDecDecodeData(u32 mainHandle, u32 subHandle, vm::ptr<u8> data,
 					output[j + 2] = image.get()[srcOffset + j + 1];
 					output[j + 3] = image.get()[srcOffset + j + 2];
 				}
-				std::memcpy(&data[dstOffset], output.get(), linesize);
+				std::memcpy(&data[dstOffset], output.data(), linesize);
 			}
 		}
 		else
 		{
-			const auto img = std::make_unique<uint[]>(image_size);
-			uint* source_current = reinterpret_cast<uint*>(image.get());
-			uint* dest_current = img.get();
-			for (uint i = 0; i < image_size / nComponents; i++)
+			std::vector<u32> img(image_size);
+			const u32* source_current = reinterpret_cast<const u32*>(image.get());
+			u32* dest_current = img.data();
+			for (u32 i = 0; i < image_size / nComponents; i++)
 			{
-				uint val = *source_current;
+				const u32 val = *source_current;
 				*dest_current = (val >> 24) | (val << 8); // set alpha (A8) as leftmost byte
 				source_current++;
 				dest_current++;
 			}
-			std::memcpy(data.get_ptr(), img.get(), image_size);
+			std::memcpy(data.get_ptr(), img.data(), image_size);
 		}
+		break;
 	}
-	break;
-
 	case CELL_JPG_GRAYSCALE:
 	case CELL_JPG_YCbCr:
 	case CELL_JPG_UPSAMPLE_ONLY:
 	case CELL_JPG_GRAYSCALE_TO_ALPHA_RGBA:
 	case CELL_JPG_GRAYSCALE_TO_ALPHA_ARGB:
 		cellJpgDec.error("cellJpgDecDecodeData: Unsupported color space (%d)", current_outParam.outputColorSpace);
-	break;
+		break;
 
 	default:
 		return CELL_JPGDEC_ERROR_ARG;
@@ -324,7 +315,7 @@ error_code cellJpgDecDecodeData(u32 mainHandle, u32 subHandle, vm::ptr<u8> data,
 
 	dataOutInfo->status = CELL_JPGDEC_DEC_STATUS_FINISH;
 
-	if(dataCtrlParam->outputBytesPerLine)
+	if (dataCtrlParam->outputBytesPerLine)
 		dataOutInfo->outputLines = static_cast<u32>(image_size / dataCtrlParam->outputBytesPerLine);
 
 	return CELL_OK;

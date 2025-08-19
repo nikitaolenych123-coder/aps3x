@@ -842,6 +842,7 @@ void spu_cache::initialize(bool build_existing_cache)
 		// Initialize compiler instances for parallel compilation
 		std::unique_ptr<spu_recompiler_base> compiler;
 
+#if defined(ARCH_X64)
 		if (g_cfg.core.spu_decoder == spu_decoder_type::asmjit)
 		{
 			compiler = spu_recompiler_base::make_asmjit_recompiler();
@@ -850,6 +851,22 @@ void spu_cache::initialize(bool build_existing_cache)
 		{
 			compiler = spu_recompiler_base::make_llvm_recompiler();
 		}
+		else
+		{
+			fmt::throw_exception("Unsupported spu decoder '%s'", g_cfg.core.spu_decoder);
+		}
+#elif defined(ARCH_ARM64)
+		if (g_cfg.core.spu_decoder == spu_decoder_type::llvm)
+		{
+			compiler = spu_recompiler_base::make_llvm_recompiler();
+		}
+		else
+		{
+			fmt::throw_exception("Unsupported spu decoder '%s'", g_cfg.core.spu_decoder);
+		}
+#else
+#error "Unimplemented"
+#endif
 
 		compiler->init();
 
@@ -2545,7 +2562,7 @@ bool reg_state_t::is_const() const
 
 bool reg_state_t::compare_tags(const reg_state_t& rhs) const
 {
-	// Compare by tag, address of instruction origin 
+	// Compare by tag, address of instruction origin
 	return tag == rhs.tag && origin == rhs.origin && is_instruction == rhs.is_instruction;
 }
 
@@ -6066,7 +6083,7 @@ spu_program spu_recompiler_base::analyse(const be_t<u32>* ls, u32 entry_point, s
 									else if (atomic16->ls_offs.compare_with_mask_indifference(atomic16->lsa, SPU_LS_MASK_128) && atomic16->ls.is_less_than(128 - (atomic16->ls_offs.value & 127)))
 									{
 										// Relative memory access with offset less than 128 bytes
-										// Common around SPU utilities which have less strict restrictions about memory alignment 
+										// Common around SPU utilities which have less strict restrictions about memory alignment
 										ok = true;
 									}
 								}
@@ -6340,7 +6357,7 @@ spu_program spu_recompiler_base::analyse(const be_t<u32>* ls, u32 entry_point, s
 			{
 				atomic16->mem_count++;
 
-				// Do not clear lower 16 bytes addressing because the program can move on 4-byte basis 
+				// Do not clear lower 16 bytes addressing because the program can move on 4-byte basis
 				const u32 offs = spu_branch_target(pos - result.lower_bound, op.si16);
 
 				if (atomic16->lsa.is_const() && [&]()
@@ -7359,7 +7376,7 @@ struct spu_llvm_worker
 				set_relax_flag = false;
 			}
 
-			thread_ctrl::wait_on(utils::bless<atomic_t<u32>>(&registered)[1], 0);
+			thread_ctrl::wait_on(registered.get_wait_atomic(), 0);
 			slice = registered.pop_all();
 		}())
 		{
@@ -7474,7 +7491,7 @@ struct spu_llvm
 		while (!registered && thread_ctrl::state() != thread_state::aborting)
 		{
 			// Wait for the first SPU block before launching any thread
-			thread_ctrl::wait_on(utils::bless<atomic_t<u32>>(&registered)[1], 0);
+			thread_ctrl::wait_on(registered.get_wait_atomic(), 0);
 		}
 
 		if (thread_ctrl::state() == thread_state::aborting)
@@ -7577,7 +7594,7 @@ struct spu_llvm
 
 				// Interrupt profiler thread and put it to sleep
 				static_cast<void>(prof_mutex.reset());
-				thread_ctrl::wait_on(utils::bless<atomic_t<u32>>(&registered)[1], 0);
+				thread_ctrl::wait_on(registered.get_wait_atomic(), 0);
 				std::fill(notify_compile.begin(), notify_compile.end(), 0); // Reset notification flags
 				notify_compile_count = 0;
 				compile_pending = 0;
@@ -8142,7 +8159,7 @@ std::array<reg_state_t, s_reg_max>& block_reg_info::evaluate_start_state(const s
 					// Check if the node is resolved
 					if (!node->has_true_state)
 					{
-						// Assume this block cannot be resolved at the moment 
+						// Assume this block cannot be resolved at the moment
 						is_all_resolved = false;
 						break;
 					}

@@ -2,7 +2,6 @@
 
 #include "util/serialization.hpp"
 #include "Emu/IdManager.h"
-#include "Emu/IPC.h"
 #include "Emu/System.h"
 
 #include "Emu/Cell/ErrorCodes.h"
@@ -60,7 +59,6 @@ CellError lv2_cond::on_id_create()
 		if (!mutex)
 		{
 			_mutex = static_cast<shared_ptr<lv2_obj>>(ensure(idm::get_unlocked<lv2_obj, lv2_mutex>(mtx_id)));
-
 		}
 
 		// Defer function
@@ -72,7 +70,7 @@ CellError lv2_cond::on_id_create()
 
 std::function<void(void*)> lv2_cond::load(utils::serial& ar)
 {
-	return load_func(make_shared<lv2_cond>(ar));
+	return load_func(make_shared<lv2_cond>(stx::exact_t<utils::serial&>(ar)));
 }
 
 void lv2_cond::save(utils::serial& ar)
