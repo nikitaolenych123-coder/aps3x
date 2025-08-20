@@ -37,8 +37,8 @@ lv2_event_queue::lv2_event_queue(utils::serial& ar) noexcept
 
 std::function<void(void*)> lv2_event_queue::load(utils::serial& ar)
 {
-	auto queue = make_shared<lv2_event_queue>(stx::exact_t<utils::serial&>(ar));
-	return [ptr = lv2_obj::load(queue->key, queue)](void* storage) { *static_cast<atomic_ptr<lv2_obj>*>(storage) = ptr; };
+	auto queue = make_shared<lv2_event_queue>(ar);
+	return [ptr = lv2_obj::load(queue->key, queue)](void* storage) { *static_cast<shared_ptr<lv2_obj>*>(storage) = ptr; };
 }
 
 void lv2_event_queue::save(utils::serial& ar)
@@ -117,7 +117,7 @@ shared_ptr<lv2_event_queue> lv2_event_queue::find(u64 ipc_key)
 	return g_fxo->get<ipc_manager<lv2_event_queue, u64>>().get(ipc_key);
 }
 
-extern void resume_spu_thread_group_from_waiting(spu_thread& spu, std::array<shared_ptr<named_thread<spu_thread>>, 8>& notify_spus);
+extern void resume_spu_thread_group_from_waiting(spu_thread& spu);
 
 CellError lv2_event_queue::send(lv2_event event, bool* notified_thread, lv2_event_port* port)
 {
@@ -125,22 +125,6 @@ CellError lv2_event_queue::send(lv2_event event, bool* notified_thread, lv2_even
 	{
 		*notified_thread = false;
 	}
-
-	struct notify_spus_t 
-	{
-		std::array<shared_ptr<named_thread<spu_thread>>, 8> spus;
-
-		~notify_spus_t() noexcept
-		{
-			for (auto& spu : spus)
-			{
-				if (spu && spu->state & cpu_flag::wait)
-				{
-					spu->state.notify_one();
-				}
-			}
-		}
-	} notify_spus{};
 
 	std::lock_guard lock(mutex);
 
@@ -215,7 +199,7 @@ CellError lv2_event_queue::send(lv2_event event, bool* notified_thread, lv2_even
 		const u32 data2 = static_cast<u32>(std::get<2>(event));
 		const u32 data3 = static_cast<u32>(std::get<3>(event));
 		spu.ch_in_mbox.set_values(4, CELL_OK, data1, data2, data3);
-		resume_spu_thread_group_from_waiting(spu, notify_spus.spus);
+		resume_spu_thread_group_from_waiting(spu);
 	}
 
 	return {};
@@ -275,22 +259,6 @@ error_code sys_event_queue_destroy(ppu_thread& ppu, u32 equeue_id, s32 mode)
 	{
 		return CELL_EINVAL;
 	}
-
-	struct notify_spus_t 
-	{
-		std::array<shared_ptr<named_thread<spu_thread>>, 8> spus;
-
-		~notify_spus_t() noexcept
-		{
-			for (auto& spu : spus)
-			{
-				if (spu && spu->state & cpu_flag::wait)
-				{
-					spu->state.notify_one();
-				}
-			}
-		}
-	} notify_spus{};
 
 	std::vector<lv2_event> events;
 
@@ -389,7 +357,7 @@ error_code sys_event_queue_destroy(ppu_thread& ppu, u32 equeue_id, s32 mode)
 			for (auto cpu = +queue->sq; cpu; cpu = cpu->next_cpu)
 			{
 				cpu->ch_in_mbox.set_values(1, CELL_ECANCELED);
-				resume_spu_thread_group_from_waiting(*cpu, notify_spus.spus);
+				resume_spu_thread_group_from_waiting(*cpu);
 			}
 
 			atomic_storage<spu_thread*>::release(queue->sq, nullptr);
@@ -452,8 +420,10 @@ error_code sys_event_queue_tryreceive(ppu_thread& ppu, u32 equeue_id, vm::ptr<sy
 	while (count < size && !queue->events.empty())
 	{
 		auto& dest = events[count++];
-		std::tie(dest.source, dest.data1, dest.data2, dest.data3) = queue->events.front();
+		const auto event = queue->events.front();
 		queue->events.pop_front();
+
+		std::tie(dest.source, dest.data1, dest.data2, dest.data3) = event;
 	}
 
 	lock.unlock();

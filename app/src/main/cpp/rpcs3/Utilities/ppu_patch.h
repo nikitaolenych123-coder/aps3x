@@ -2,6 +2,7 @@
 
 #include <util/types.hpp>
 #include <unordered_set>
+#include <vector>
 #include <string>
 
 // Patch utilities specific to PPU code

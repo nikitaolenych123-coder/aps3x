@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sys_hid.h"
 
+#include "Emu/Memory/vm.h"
 #include "Emu/Memory/vm_var.h"
 
 #include "Emu/Cell/PPUThread.h"

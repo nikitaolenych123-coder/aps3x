@@ -378,7 +378,7 @@ error_code sys_time_get_current_time(vm::ptr<s64> sec, vm::ptr<s64> nsec)
 	if (g_cfg.core.clocks_scale == 100)
 	{
 		// get the seconds from the system clock, and add the console time offset (which might be negative)
-		*sec  = ts.tv_sec + g_cfg.sys.console_time_offset;
+		*sec  = ts.tv_sec;// + g_cfg.sys.console_time_offset;
 
 		if (!nsec)
 		{
@@ -410,7 +410,7 @@ error_code sys_time_get_current_time(vm::ptr<s64> sec, vm::ptr<s64> nsec)
 	tv_nsec = stv_nsec + (tv_nsec * g_cfg.core.clocks_scale / 100);
 
 	// Scale seconds and add from nanoseconds / 1'000'000'000, and add the console time offset (which might be negative)
-	*sec = stv_sec + (tv_sec * g_cfg.core.clocks_scale / 100u) + (tv_nsec / 1000000000ull) + g_cfg.sys.console_time_offset;
+	*sec = stv_sec + (tv_sec * g_cfg.core.clocks_scale / 100u) + (tv_nsec / 1000000000ull);// + g_cfg.sys.console_time_offset;
 
 	if (!nsec)
 	{

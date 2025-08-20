@@ -1220,7 +1220,7 @@ error_code cellVdecGetPictureExt(ppu_thread& ppu, u32 handle, vm::cptr<CellVdecP
 
 	if (arg4 || format->unk0 || format->unk1)
 	{
-		cellVdec.todo("cellVdecGetPictureExt: Unknown arguments (arg4=*0x%x, unk0=0x%x, unk1=0x%x)", arg4, format->unk0, format->unk1);
+		fmt::throw_exception("cellVdecGetPictureExt: Unknown arguments (arg4=*0x%x, unk0=0x%x, unk1=0x%x)", arg4, format->unk0, format->unk1);
 	}
 
 	vdec_frame frame;
@@ -1619,25 +1619,10 @@ error_code cellVdecSetFrameRate(u32 handle, CellVdecFrameRate frameRateCode)
 	return CELL_OK;
 }
 
-error_code cellVdecOpenExt(ppu_thread& ppu, vm::cptr<CellVdecType> type, vm::cptr<CellVdecResourceExt> res, vm::cptr<CellVdecCb> cb, vm::ptr<u32> handle)
+error_code cellVdecOpenExt()
 {
-	cellVdec.warning("cellVdecOpenExt(type=*0x%x, res=*0x%x, cb=*0x%x, handle=*0x%x)", type, res, cb, handle);
-
-	if (!res)
-	{
-		return CELL_VDEC_ERROR_ARG;
-	}
-
-	vm::var<CellVdecResource> tmp = vm::make_var<CellVdecResource>({});
-	tmp->memAddr = res->memAddr;
-	tmp->memSize = res->memSize;
-	tmp->ppuThreadPriority = res->ppuThreadPriority;
-	tmp->ppuThreadStackSize = res->ppuThreadStackSize;
-	tmp->spuThreadPriority = 0;
-	tmp->numOfSpus = res->numOfSpus;
-
-	const vm::ptr<CellVdecResource> ptr = vm::cast(tmp.addr());
-	return vdecOpen(ppu, type, ptr, cb, handle);
+	UNIMPLEMENTED_FUNC(cellVdec);
+	return CELL_OK;
 }
 
 error_code cellVdecStartSeqExt()

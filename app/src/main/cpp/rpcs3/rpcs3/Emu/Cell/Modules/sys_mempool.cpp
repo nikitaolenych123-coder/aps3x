@@ -7,6 +7,8 @@
 #include "Emu/Cell/lv2/sys_mutex.h"
 #include "Emu/Cell/lv2/sys_cond.h"
 
+#include "sysPrxForUser.h"
+
 LOG_CHANNEL(sysPrxForUser);
 
 using sys_mempool_t = u32;

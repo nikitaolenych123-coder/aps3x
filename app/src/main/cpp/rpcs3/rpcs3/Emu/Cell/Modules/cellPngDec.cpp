@@ -19,6 +19,11 @@ typedef png_bytep iCCP_profile_type;
 typedef png_charp iCCP_profile_type;
 #endif
 
+// Temporarily
+#ifndef _MSC_VER
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 LOG_CHANNEL(cellPngDec);
 
 template <>
@@ -144,7 +149,7 @@ void pngDecRowCallback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_n
 	png_progressive_combine_row(png_ptr, data, new_row);
 }
 
-void pngDecInfoCallback(png_structp png_ptr, png_infop /*info*/)
+void pngDecInfoCallback(png_structp png_ptr, png_infop info)
 {
 	PngStream* stream = static_cast<PngStream*>(png_get_progressive_ptr(png_ptr));
 	if (!stream)
@@ -157,7 +162,7 @@ void pngDecInfoCallback(png_structp png_ptr, png_infop /*info*/)
 	stream->buffer->cursor += (stream->buffer->length - remaining);
 }
 
-void pngDecEndCallback(png_structp png_ptr, png_infop /*info*/)
+void pngDecEndCallback(png_structp png_ptr, png_infop info)
 {
 	PngStream* stream = static_cast<PngStream*>(png_get_progressive_ptr(png_ptr));
 	if (!stream)
@@ -170,17 +175,17 @@ void pngDecEndCallback(png_structp png_ptr, png_infop /*info*/)
 }
 
 // Custom error handler for libpng
-[[noreturn]] void pngDecError(png_structp /*png_ptr*/, png_const_charp error_message)
+[[noreturn]] void pngDecError(png_structp png_ptr, png_const_charp error_message)
 {
-	cellPngDec.error("pngDecError: %s", error_message);
+	cellPngDec.error("%s", error_message);
 	// we can't return here or libpng blows up
 	fmt::throw_exception("Fatal Error in libpng: %s", error_message);
 }
 
 // Custom warning handler for libpng
-void pngDecWarning(png_structp /*png_ptr*/, png_const_charp error_message)
+void pngDecWarning(png_structp png_ptr, png_const_charp error_message)
 {
-	cellPngDec.warning("pngDecWarning: %s", error_message);
+	cellPngDec.warning("%s", error_message);
 }
 
 // Get the chunk information of the PNG file. IDAT is marked as existing, only after decoding or reading the header.
@@ -332,7 +337,7 @@ be_t<u32> pngDecGetChunkInformation(PngStream* stream, bool IDAT = false)
 	return chunk_information;
 }
 
-error_code pngDecCreate(ppu_thread& ppu, PPHandle png_handle, PThreadInParam thread_in_param, PThreadOutParam thread_out_param, PExtThreadInParam /*extra_thread_in_param*/ = vm::null, PExtThreadOutParam extra_thread_out_param = vm::null)
+error_code pngDecCreate(ppu_thread& ppu, PPHandle png_handle, PThreadInParam thread_in_param, PThreadOutParam thread_out_param, PExtThreadInParam extra_thread_in_param = vm::null, PExtThreadOutParam extra_thread_out_param = vm::null)
 {
 	// Check if partial image decoding is used
 	if (extra_thread_out_param)
@@ -903,103 +908,103 @@ error_code cellPngDecExtDecodeData(ppu_thread& ppu, PHandle handle, PStream stre
 
 error_code cellPngDecGetUnknownChunks(PHandle handle, PStream stream, vm::pptr<CellPngUnknownChunk> unknownChunk, vm::ptr<u32> unknownChunkNumber)
 {
-	cellPngDec.todo("cellPngDecGetUnknownChunks(handle=*0x%x, stream=*0x%x, unknownChunk=*0x%x, unknownChunkNumber=*0x%x)", handle, stream, unknownChunk, unknownChunkNumber);
+	cellPngDec.todo("cellPngDecGetUnknownChunks()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetpCAL(PHandle handle, PStream stream, vm::ptr<CellPngPCAL> pcal)
 {
-	cellPngDec.todo("cellPngDecGetpCAL(handle=*0x%x, stream=*0x%x, pcal=*0x%x)", handle, stream, pcal);
+	cellPngDec.todo("cellPngDecGetpCAL()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetcHRM(PHandle handle, PStream stream, vm::ptr<CellPngCHRM> chrm)
 {
-	cellPngDec.todo("cellPngDecGetcHRM(handle=*0x%x, stream=*0x%x, chrm=*0x%x)", handle, stream, chrm);
+	cellPngDec.todo("cellPngDecGetcHRM()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetsCAL(PHandle handle, PStream stream, vm::ptr<CellPngSCAL> scal)
 {
-	cellPngDec.todo("cellPngDecGetsCAL(handle=*0x%x, stream=*0x%x, scal=*0x%x)", handle, stream, scal);
+	cellPngDec.todo("cellPngDecGetsCAL()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetpHYs(PHandle handle, PStream stream, vm::ptr<CellPngPHYS> phys)
 {
-	cellPngDec.todo("cellPngDecGetpHYs(handle=*0x%x, stream=*0x%x, phys=*0x%x)", handle, stream, phys);
+	cellPngDec.todo("cellPngDecGetpHYs()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetoFFs(PHandle handle, PStream stream, vm::ptr<CellPngOFFS> offs)
 {
-	cellPngDec.todo("cellPngDecGetoFFs(handle=*0x%x, stream=*0x%x, offs=*0x%x)", handle, stream, offs);
+	cellPngDec.todo("cellPngDecGetoFFs()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetsPLT(PHandle handle, PStream stream, vm::ptr<CellPngSPLT> splt)
 {
-	cellPngDec.todo("cellPngDecGetsPLT(handle=*0x%x, stream=*0x%x, splt=*0x%x)", handle, stream, splt);
+	cellPngDec.todo("cellPngDecGetsPLT()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetbKGD(PHandle handle, PStream stream, vm::ptr<CellPngBKGD> bkgd)
 {
-	cellPngDec.todo("cellPngDecGetbKGD(handle=*0x%x, stream=*0x%x, bkgd=*0x%x)", handle, stream, bkgd);
+	cellPngDec.todo("cellPngDecGetbKGD()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGettIME(PHandle handle, PStream stream, vm::ptr<CellPngTIME> time)
 {
-	cellPngDec.todo("cellPngDecGettIME(handle=*0x%x, stream=*0x%x, time=*0x%x)", handle, stream, time);
+	cellPngDec.todo("cellPngDecGettIME()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGethIST(PHandle handle, PStream stream, vm::ptr<CellPngHIST> hist)
 {
-	cellPngDec.todo("cellPngDecGethIST(handle=*0x%x, stream=*0x%x, hist=*0x%x)", handle, stream, hist);
+	cellPngDec.todo("cellPngDecGethIST()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGettRNS(PHandle handle, PStream stream, vm::ptr<CellPngTRNS> trns)
 {
-	cellPngDec.todo("cellPngDecGettRNS(handle=*0x%x, stream=*0x%x, trns=*0x%x)", handle, stream, trns);
+	cellPngDec.todo("cellPngDecGettRNS()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetsBIT(PHandle handle, PStream stream, vm::ptr<CellPngSBIT> sbit)
 {
-	cellPngDec.todo("cellPngDecGetsBIT(handle=*0x%x, stream=*0x%x, sbit=*0x%x)", handle, stream, sbit);
+	cellPngDec.todo("cellPngDecGetsBIT()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetiCCP(PHandle handle, PStream stream, vm::ptr<CellPngICCP> iccp)
 {
-	cellPngDec.todo("cellPngDecGetiCCP(handle=*0x%x, stream=*0x%x, iccp=*0x%x)", handle, stream, iccp);
+	cellPngDec.todo("cellPngDecGetiCCP()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetsRGB(PHandle handle, PStream stream, vm::ptr<CellPngSRGB> srgb)
 {
-	cellPngDec.todo("cellPngDecGetsRGB(handle=*0x%x, stream=*0x%x, srgb=*0x%x)", handle, stream, srgb);
+	cellPngDec.todo("cellPngDecGetsRGB()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetgAMA(PHandle handle, PStream stream, vm::ptr<CellPngGAMA> gama)
 {
-	cellPngDec.todo("cellPngDecGetgAMA(handle=*0x%x, stream=*0x%x, gama=*0x%x)", handle, stream, gama);
+	cellPngDec.todo("cellPngDecGetgAMA()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetPLTE(PHandle handle, PStream stream, vm::ptr<CellPngPLTE> plte)
 {
-	cellPngDec.todo("cellPngDecGetPLTE(handle=*0x%x, stream=*0x%x, plte=*0x%x)", handle, stream, plte);
+	cellPngDec.todo("cellPngDecGetPLTE()");
 	return CELL_OK;
 }
 
 error_code cellPngDecGetTextChunk(PHandle handle, PStream stream, vm::ptr<u32> textInfoNum, vm::pptr<CellPngTextInfo> textInfo)
 {
-	cellPngDec.todo("cellPngDecGetTextChunk(handle=*0x%x, stream=*0x%x, textInfoNum=*0x%x, textInfo=*0x%x)", handle, stream, textInfoNum, textInfo);
+	cellPngDec.todo("cellPngDecGetTextChunk()");
 	return CELL_OK;
 }
 

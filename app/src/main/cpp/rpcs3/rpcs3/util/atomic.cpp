@@ -15,12 +15,12 @@ namespace utils
 {
 	u128 __vectorcall atomic_load16(const void* ptr)
 	{
-		return std::bit_cast<u128>(_mm_load_si128(static_cast<const __m128i*>(ptr)));
+		return std::bit_cast<u128>(_mm_load_si128((__m128i*)ptr));
 	}
 
 	void __vectorcall atomic_store16(void* ptr, u128 value)
 	{
-		_mm_store_si128(static_cast<__m128i*>(ptr), std::bit_cast<__m128i>(value));
+		_mm_store_si128((__m128i*)ptr, std::bit_cast<__m128i>(value));
 	}
 }
 #endif
@@ -28,20 +28,22 @@ namespace utils
 #include "Utilities/sync.h"
 #include "Utilities/StrFmt.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(__ANDROID__)
 static bool has_waitv()
 {
 	static const bool s_has_waitv = []
 	{
-#ifndef ANDROID
-		// FIXME: it produces SIGSYS signal
 		syscall(SYS_futex_waitv, 0, 0, 0, 0, 0);
-		return errno != ENOSYS;
-#endif
-		return false;
+		if (errno == ENOSYS)
+			return false;
+		return true;
 	}();
 
 	return s_has_waitv;
+}
+#elif defined(__ANDROID__)
+constexpr bool has_waitv() {
+    return false;
 }
 #endif
 
@@ -57,8 +59,8 @@ static bool has_waitv()
 // Total number of entries.
 static constexpr usz s_hashtable_size = 1u << 17;
 
-// Reference counter mask
-static constexpr uptr s_ref_mask = 0xffff'ffff;
+// Reference counter combined with shifted pointer (which is assumed to be 48 bit)
+static constexpr uptr s_ref_mask = 0xffff;
 
 // Fix for silly on-first-use initializer
 static bool s_null_wait_cb(const void*, u64, u64){ return true; };
@@ -153,16 +155,8 @@ namespace
 	// Essentially a fat semaphore
 	struct alignas(64) cond_handle
 	{
-		struct fat_ptr
-		{
-			u64 ptr{};
-			u32 reserved{};
-			u32 ref_ctr{};
-
-			auto operator<=>(const fat_ptr& other) const = default;
-		};
-
-		atomic_t<fat_ptr> ptr_ref;
+		// Combined pointer (most significant 48 bits) and ref counter (16 least significant bits)
+		atomic_t<u64> ptr_ref;
 		u64 tid;
 		u32 oldv;
 
@@ -180,10 +174,8 @@ namespace
 		{
 #ifdef _WIN32
 			tid = GetCurrentThreadId();
-#elif defined(ANDROID)
-			tid = pthread_self();
 #else
-			tid = reinterpret_cast<u64>(pthread_self());
+			tid = static_cast<u64>(pthread_self());
 #endif
 
 #ifdef USE_STD
@@ -191,7 +183,7 @@ namespace
 			mtx.init(mtx);
 #endif
 
-			ensure(ptr_ref.exchange(fat_ptr{iptr, 0, 1}) == fat_ptr{});
+			ensure(!ptr_ref.exchange((iptr << 16) | 1));
 		}
 
 		void destroy()
@@ -378,7 +370,7 @@ namespace
 				if (cond_id)
 				{
 					// Set fake refctr
-					s_cond_list[cond_id].ptr_ref.release(cond_handle::fat_ptr{0, 0, 1});
+					s_cond_list[cond_id].ptr_ref.release(1);
 					cond_free(cond_id, -1);
 				}
 			}
@@ -398,7 +390,7 @@ static u32 cond_alloc(uptr iptr, u32 tls_slot = -1)
 	{
 		// Fast reinitialize
 		const u32 id = std::exchange(*ptls, 0);
-		s_cond_list[id].ptr_ref.release(cond_handle::fat_ptr{iptr, 0, 1});
+		s_cond_list[id].ptr_ref.release((iptr << 16) | 1);
 		return id;
 	}
 
@@ -469,15 +461,15 @@ static void cond_free(u32 cond_id, u32 tls_slot = -1)
 	const auto cond = s_cond_list + cond_id;
 
 	// Dereference, destroy on last ref
-	const bool last = cond->ptr_ref.atomic_op([](cond_handle::fat_ptr& val)
+	const bool last = cond->ptr_ref.atomic_op([](u64& val)
 	{
-		ensure(val.ref_ctr);
+		ensure(val & s_ref_mask);
 
-		val.ref_ctr--;
+		val--;
 
-		if (val.ref_ctr == 0)
+		if ((val & s_ref_mask) == 0)
 		{
-			val = cond_handle::fat_ptr{};
+			val = 0;
 			return true;
 		}
 
@@ -533,15 +525,15 @@ static cond_handle* cond_id_lock(u32 cond_id, uptr iptr = 0)
 
 	while (true)
 	{
-		const auto [old, ok] = cond->ptr_ref.fetch_op([&](cond_handle::fat_ptr& val)
+		const auto [old, ok] = cond->ptr_ref.fetch_op([&](u64& val)
 		{
-			if (val == cond_handle::fat_ptr{} || val.ref_ctr == s_ref_mask)
+			if (!val || (val & s_ref_mask) == s_ref_mask)
 			{
 				// Don't reference already deallocated semaphore
 				return false;
 			}
 
-			if (iptr && val.ptr != iptr)
+			if (iptr && (val >> 16) != iptr)
 			{
 				// Pointer mismatch
 				return false;
@@ -556,7 +548,7 @@ static cond_handle* cond_id_lock(u32 cond_id, uptr iptr = 0)
 
 			if (!did_ref)
 			{
-				val.ref_ctr++;
+				val++;
 			}
 
 			return true;
@@ -574,7 +566,7 @@ static cond_handle* cond_id_lock(u32 cond_id, uptr iptr = 0)
 			return cond;
 		}
 
-		if (old.ref_ctr == s_ref_mask)
+		if ((old & s_ref_mask) == s_ref_mask)
 		{
 			fmt::throw_exception("Reference count limit (%u) reached in an atomic notifier.", s_ref_mask);
 		}
@@ -597,13 +589,11 @@ namespace
 		u64 maxc: 5; // Collision counter
 		u64 maxd: 11; // Distance counter
 		u64 bits: 24; // Allocated bits
-		u64 prio: 8; // Reserved
+		u64 prio: 24; // Reserved
 
 		u64 ref : 16; // Ref counter
-		u64 iptr: 64; // First pointer to use slot (to count used slots)
+		u64 iptr: 48; // First pointer to use slot (to count used slots)
 	};
-
-	static_assert(sizeof(slot_allocator) == 16);
 
 	// Need to spare 16 bits for ref counter
 	static constexpr u64 max_threads = 24;
@@ -873,7 +863,8 @@ atomic_wait_engine::wait(const void* data, u32 old_value, u64 timeout, atomic_wa
 {
 	uint ext_size = 0;
 
-#ifdef __linux__
+
+#if defined(__linux__)
 	::timespec ts{};
 	if (timeout + 1)
 	{
@@ -945,7 +936,7 @@ atomic_wait_engine::wait(const void* data, u32 old_value, u64 timeout, atomic_wa
 
 	const auto stamp0 = utils::get_unique_tsc();
 
-	const uptr iptr = reinterpret_cast<uptr>(data);
+	const uptr iptr = reinterpret_cast<uptr>(data) & (~s_ref_mask >> 16);
 
 	uptr iptr_ext[atomic_wait::max_list - 1]{};
 
@@ -966,7 +957,7 @@ atomic_wait_engine::wait(const void* data, u32 old_value, u64 timeout, atomic_wa
 				}
 			}
 
-			iptr_ext[ext_size] = reinterpret_cast<uptr>(e->data);
+			iptr_ext[ext_size] = reinterpret_cast<uptr>(e->data) & (~s_ref_mask >> 16);
 			ext_size++;
 		}
 	}
@@ -1269,14 +1260,15 @@ void atomic_wait_engine::set_one_time_use_wait_callback(bool(*cb)(u64 progress))
 
 void atomic_wait_engine::notify_one(const void* data)
 {
-#ifdef __linux__
+
+#if defined(__linux__)
 	if (has_waitv())
 	{
 		futex(const_cast<void*>(data), FUTEX_WAKE_PRIVATE, 1);
 		return;
 	}
 #endif
-	const uptr iptr = reinterpret_cast<uptr>(data);
+	const uptr iptr = reinterpret_cast<uptr>(data) & (~s_ref_mask >> 16);
 
 	root_info::slot_search(iptr, [&](u32 cond_id)
 	{
@@ -1292,14 +1284,15 @@ void atomic_wait_engine::notify_one(const void* data)
 SAFE_BUFFERS(void)
 atomic_wait_engine::notify_all(const void* data)
 {
-#ifdef __linux__
+
+#if defined(__linux__)
 	if (has_waitv())
 	{
 		futex(const_cast<void*>(data), FUTEX_WAKE_PRIVATE, INT_MAX);
 		return;
 	}
 #endif
-	const uptr iptr = reinterpret_cast<uptr>(data);
+	const uptr iptr = reinterpret_cast<uptr>(data) & (~s_ref_mask >> 16);
 
 	// Array count for batch notification
 	u32 count = 0;

@@ -172,9 +172,13 @@ public class AboutActivity extends AppCompatActivity {
                 + " *增加线程亲和力掩码选项\n"
                 + " *新增法语，俄语等共18种语言支持\n"
                 + "1.29(2025-08-19)\n"
+                //+ " *游戏退出项优化\n"
                 + " *启动时检测设备是否支持Vulkan\n"
                 + " *使用高精度的计时器\n"
                 + " *同步部分RPCS3更新\n"
+                + "1.30(2025-08-20)\n"
+                //+ " *同步部分RPCS3更新（0820）\n"
+                + " *回退掉RPCS3更新\n"
                 + " \n";
 
         return log;

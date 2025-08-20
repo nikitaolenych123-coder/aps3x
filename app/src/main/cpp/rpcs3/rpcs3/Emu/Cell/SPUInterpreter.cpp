@@ -3,6 +3,7 @@
 
 #include "Utilities/JIT.h"
 #include "SPUThread.h"
+#include "Emu/Cell/Common.h"
 #include "Emu/Cell/SPUAnalyser.h"
 #include "Emu/system_config.h"
 
@@ -12,6 +13,7 @@
 #include "util/sysinfo.hpp"
 
 #include <cmath>
+#include <cfenv>
 
 #if !defined(_MSC_VER)
 #pragma GCC diagnostic push

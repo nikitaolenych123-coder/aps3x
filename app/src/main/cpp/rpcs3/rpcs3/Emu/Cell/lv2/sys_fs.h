@@ -6,6 +6,7 @@
 #include "Utilities/StrUtil.h"
 
 #include <string>
+#include <mutex>
 
 // Open Flags
 enum : s32

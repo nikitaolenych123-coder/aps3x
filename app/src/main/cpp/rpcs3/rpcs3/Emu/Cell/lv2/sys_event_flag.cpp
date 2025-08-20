@@ -2,9 +2,12 @@
 #include "sys_event_flag.h"
 
 #include "Emu/IdManager.h"
+#include "Emu/IPC.h"
 
 #include "Emu/Cell/ErrorCodes.h"
 #include "Emu/Cell/PPUThread.h"
+
+#include <algorithm>
 
 #include "util/asm.hpp"
 
@@ -21,7 +24,7 @@ lv2_event_flag::lv2_event_flag(utils::serial& ar)
 
 std::function<void(void*)> lv2_event_flag::load(utils::serial& ar)
 {
-	return load_func(make_shared<lv2_event_flag>(stx::exact_t<utils::serial&>(ar)));
+	return load_func(make_shared<lv2_event_flag>(ar));
 }
 
 void lv2_event_flag::save(utils::serial& ar)

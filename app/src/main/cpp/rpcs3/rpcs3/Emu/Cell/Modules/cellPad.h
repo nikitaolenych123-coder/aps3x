@@ -3,6 +3,7 @@
 #include "Emu/Io/pad_types.h"
 
 #include <array>
+#include "util/types.hpp"
 
 enum CellPadError : u32
 {
@@ -41,13 +42,13 @@ enum
 
 struct pad_data_internal
 {
-	u16 vendor_id = 0;
-	u16 product_id = 0;
-	u32 port_status = 0;
-	u32 device_capability = 0;
-	u32 device_type = 0;
-	u32 pclass_type = 0;
-	u32 pclass_profile = 0;
+	u16 vendor_id;
+	u16 product_id;
+	u32 port_status;
+	u32 device_capability;
+	u32 device_type;
+	u32 pclass_type;
+	u32 pclass_profile;
 
 	ENABLE_BITWISE_SERIALIZATION;
 };

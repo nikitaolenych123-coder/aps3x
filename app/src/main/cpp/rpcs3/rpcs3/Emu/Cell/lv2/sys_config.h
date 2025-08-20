@@ -1,8 +1,11 @@
 #pragma once
 
+#include <map>
+#include <list>
+
 #include "util/atomic.hpp"
 #include "util/shared_ptr.hpp"
-#include "Emu/Cell/timers.hpp"
+
 
 /*
  * sys_config is a "subscription-based data storage API"
@@ -158,8 +161,6 @@ public:
 
 		return null_ptr;
 	}
-
-	~lv2_config() noexcept;
 };
 
 /*
@@ -275,7 +276,7 @@ public:
 
 	// Utilities
 	usz get_size() const { return sizeof(sys_config_service_event_t)-1 + data.size(); }
-	shared_ptr<lv2_config_service> get_shared_ptr () const { return stx::make_shared_from_this<lv2_config_service>(this); }
+	shared_ptr<lv2_config_service> get_shared_ptr () const { return idm::get_unlocked<lv2_config_service>(idm_id); }
 	u32 get_id() const { return idm_id; }
 };
 
@@ -341,7 +342,7 @@ public:
 
 	// Utilities
 	u32 get_id() const { return idm_id; }
-	shared_ptr<lv2_config_service_listener> get_shared_ptr() const { return stx::make_shared_from_this<lv2_config_service_listener>(this); }
+	shared_ptr<lv2_config_service_listener> get_shared_ptr() const { return idm::get_unlocked<lv2_config_service_listener>(idm_id); }
 };
 
 /*
@@ -358,10 +359,6 @@ class lv2_config_service_event
 
 		return g_fxo->get<service_event_id>().next_id++;
 	}
-
-	atomic_t<bool> m_destroyed = false;
-
-	friend class lv2_config;
 
 public:
 	const u32 id;
@@ -394,7 +391,8 @@ public:
 
 	// Destructor
 	lv2_config_service_event& operator=(thread_state s) noexcept;
-	~lv2_config_service_event() noexcept;
+
+	~lv2_config_service_event() noexcept = default;
 
 	// Notify queue that this event exists
 	bool notify() const;

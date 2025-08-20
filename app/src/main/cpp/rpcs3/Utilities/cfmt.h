@@ -2,6 +2,7 @@
 
 #include "util/types.hpp"
 #include <string>
+#include <vector>
 #include <algorithm>
 #include "util/asm.hpp"
 

@@ -4,8 +4,6 @@
 #include "cellWebBrowser.h"
 #include "Emu/IdManager.h"
 
-#include "cellSysutil.h"
-
 LOG_CHANNEL(cellSysutil);
 
 struct browser_info

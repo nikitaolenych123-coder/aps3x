@@ -1,6 +1,9 @@
 #pragma once
 
 #include "util/types.hpp"
+#include "util/shared_ptr.hpp"
+
+#include <string_view>
 
 #ifndef _MSC_VER
 #define ATTR_PURE __attribute__((pure))

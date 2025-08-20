@@ -2,12 +2,12 @@
 #include "util/cpu_stats.hpp"
 #include "util/sysinfo.hpp"
 #include "util/logs.hpp"
+#include "util/asm.hpp"
 #include "Utilities/StrUtil.h"
 
 #include <algorithm>
 
 #ifdef _WIN32
-#include "util/asm.hpp"
 #include "windows.h"
 #include "tlhelp32.h"
 #ifdef _MSC_VER
@@ -18,6 +18,8 @@
 #include "sstream"
 #include "stdlib.h"
 #include "sys/times.h"
+#include "sys/types.h"
+#include "unistd.h"
 #endif
 
 #ifdef __APPLE__
@@ -32,7 +34,6 @@
 
 #if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <sys/sysctl.h>
-# include <unistd.h>
 # if defined(__DragonFly__) || defined(__FreeBSD__)
 #  include <sys/user.h>
 # endif
@@ -128,6 +129,20 @@ namespace utils
 		per_core_usage.resize(utils::get_thread_count());
 		std::fill(per_core_usage.begin(), per_core_usage.end(), 0.0);
 
+#if defined(_WIN32) || (defined(__linux__)&&!defined(__ANDROID__))
+		const auto string_to_number = [](const std::string& str) -> std::pair<bool, size_t>
+		{
+			std::add_pointer_t<char> eval;
+			const size_t number = std::strtol(str.c_str(), &eval, 10);
+
+			if (str.c_str() + str.size() == eval)
+			{
+				return { true, number };
+			}
+
+			return { false, 0 };
+		};
+
 #ifdef _WIN32
 		if (!m_cpu_cores || !m_cpu_query)
 		{
@@ -198,7 +213,7 @@ namespace utils
 		}
 
 #elif __linux__
-#ifndef ANDROID
+
 		m_previous_idle_times_per_cpu.resize(utils::get_thread_count(), 0.0);
 		m_previous_total_times_per_cpu.resize(utils::get_thread_count(), 0.0);
 
@@ -444,7 +459,7 @@ namespace utils
 		if (proc_dir)
 		{
 			// proc available, iterate through tasks and count them
-			const struct dirent* entry;
+			struct dirent* entry;
 			while ((entry = readdir(proc_dir)) != NULL)
 			{
 				if (entry->d_name[0] == '.')

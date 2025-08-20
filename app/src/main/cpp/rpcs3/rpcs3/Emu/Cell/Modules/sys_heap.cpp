@@ -2,6 +2,8 @@
 #include "Emu/IdManager.h"
 #include "Emu/Cell/PPUModule.h"
 
+#include "sysPrxForUser.h"
+
 LOG_CHANNEL(sysPrxForUser);
 
 struct HeapInfo

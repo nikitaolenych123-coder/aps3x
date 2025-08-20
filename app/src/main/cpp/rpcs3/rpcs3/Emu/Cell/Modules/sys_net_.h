@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Emu/Cell/lv2/sys_net.h"
+#include "Emu/Memory/vm.h"
 
 struct sys_net_sockinfo_t
 {

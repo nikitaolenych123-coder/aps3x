@@ -9,8 +9,6 @@
 
 #include "util/asm.hpp"
 
-#include <thread>
-
 LOG_CHANNEL(cellDmux);
 
 template <>

@@ -72,7 +72,7 @@ extern std::shared_ptr<CPUDisAsm> make_disasm(const cpu_thread* cpu, shared_ptr<
     result->set_cpu_handle(std::move(handle));
     return result;
 }
-#if 0
+#if 1
 template <>
 void fmt_class_string<cheat_type>::format(std::string& out, u64 arg)
 {
@@ -182,7 +182,7 @@ __attribute__((constructor)) static void init_localized_strings()
 
 class android_save_dialog:public SaveDialogBase{
 public:
-    s32 ShowSaveDataList(const std::string& base_dir, std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override
+    s32 ShowSaveDataList(std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override
     {
         LOGI("ShowSaveDataList(save_entries=%d, focused=%d, op=0x%x, listSet=*0x%x, enable_overlay=%d)", save_entries.size(), focused, op, listSet, enable_overlay);
 

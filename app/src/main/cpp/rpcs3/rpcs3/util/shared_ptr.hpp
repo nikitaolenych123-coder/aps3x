@@ -1,5 +1,6 @@
 #pragma once // No BOM and only basic ASCII in this header, or a neko will die
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include "atomic.hpp"
@@ -19,8 +20,14 @@ namespace stx
 	template <typename T>
 	class atomic_ptr;
 
-	// Use 16 bits as atomic_ptr internal counter of borrowed refs
-	constexpr uint c_ref_mask = 0xffff;
+	// Basic assumption of userspace pointer size
+	constexpr uint c_ptr_size = 48;
+
+	// Use lower 16 bits as atomic_ptr internal counter of borrowed refs (pointer itself is shifted)
+	constexpr uint c_ref_mask = 0xffff, c_ref_size = 16;
+
+	// Remaining pointer bits
+	constexpr uptr c_ptr_mask = static_cast<uptr>(-1) << c_ref_size;
 
 	struct shared_counter
 	{
@@ -207,10 +214,7 @@ namespace stx
 		}
 	};
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winvalid-offsetof"
-#elif !defined(_MSC_VER)
+#ifndef _MSC_VER
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #endif
@@ -319,9 +323,7 @@ namespace stx
 		return make_single<std::remove_reference_t<T>>(std::forward<T>(value));
 	}
 
-#ifdef __clang__
-#pragma clang diagnostic pop
-#elif !defined(_MSC_VER)
+#ifndef _MSC_VER
 #pragma GCC diagnostic pop
 #endif
 
@@ -359,8 +361,13 @@ namespace stx
 		[[deprecated("Use null_ptr")]] shared_ptr(std::nullptr_t) = delete;
 
 		// Not-so-aliasing constructor: emulates std::enable_shared_from_this without its overhead
-		template <typename Type>
-		friend shared_ptr<Type> make_shared_from_this(const Type* _this) noexcept;
+		explicit shared_ptr(T* _this) noexcept
+			: m_ptr(_this)
+		{
+			// Random checks which may fail on invalid pointer
+			ensure((reinterpret_cast<u64>(d()->destroy) - 0x10000) >> 47 == 0);
+			ensure((d()->refs++ - 1) >> 58 == 0);
+		}
 
 		template <typename U> requires same_ptr_implicit_v<T, U>
 		shared_ptr(const shared_ptr<U>& r) noexcept
@@ -555,45 +562,20 @@ namespace stx
 
 	template <typename T>
 		requires (std::is_constructible_v<std::remove_reference_t<T>, T&&>)
-	static shared_ptr<std::remove_reference_t<T>> make_shared_value(T&& value) noexcept
+	static shared_ptr<std::remove_reference_t<T>> make_shared_value(T&& value)
 	{
 		return make_single_value(std::forward<T>(value));
-	}
-
-	// Not-so-aliasing constructor: emulates std::enable_shared_from_this without its overhead
-	template <typename T>
-	static shared_ptr<T> make_shared_from_this(const T* _this) noexcept
-	{
-		shared_ptr<T> r;
-		r.m_ptr = const_cast<T*>(_this);
-
-		if (!_this) [[unlikely]]
-		{
-			return r;
-		}
-
-		// Random checks which may fail on invalid pointer
-		ensure((r.d()->refs++ - 1) >> 58 == 0);
-		return r;
 	}
 
 	// Atomic simplified shared pointer
 	template <typename T>
 	class atomic_ptr
 	{
-	private:
-		struct fat_ptr
-		{
-			uptr ptr{};
-			u32 is_non_null{};
-			u32 ref_ctr{};
-		};
+		mutable atomic_t<uptr> m_val{0};
 
-		mutable atomic_t<fat_ptr> m_val{fat_ptr{}};
-
-		static shared_counter* d(fat_ptr val) noexcept
+		static shared_counter* d(uptr val) noexcept
 		{
-			return std::launder(reinterpret_cast<shared_counter*>(val.ptr - sizeof(shared_counter)));
+			return std::launder(reinterpret_cast<shared_counter*>((val >> c_ref_size) - sizeof(shared_counter)));
 		}
 
 		shared_counter* d() const noexcept
@@ -601,19 +583,14 @@ namespace stx
 			return d(m_val);
 		}
 
-		static fat_ptr to_val(const volatile std::remove_extent_t<T>* ptr) noexcept
+		static uptr to_val(const volatile std::remove_extent_t<T>* ptr) noexcept
 		{
-			return fat_ptr{reinterpret_cast<uptr>(ptr), ptr != nullptr, 0};
+			return (reinterpret_cast<uptr>(ptr) << c_ref_size);
 		}
 
-		static fat_ptr to_val(uptr ptr) noexcept
+		static std::remove_extent_t<T>* ptr_to(uptr val) noexcept
 		{
-			return fat_ptr{ptr, ptr != 0, 0};
-		}
-
-		static std::remove_extent_t<T>* ptr_to(fat_ptr val) noexcept
-		{
-			return reinterpret_cast<std::remove_extent_t<T>*>(val.ptr);
+			return reinterpret_cast<std::remove_extent_t<T>*>(val >> c_ref_size);
 		}
 
 		template <typename U>
@@ -656,7 +633,7 @@ namespace stx
 		atomic_ptr(const shared_ptr<U>& r) noexcept
 		{
 			// Obtain a ref + as many refs as an atomic_ptr can additionally reference
-			if (fat_ptr rval = to_val(r.m_ptr); rval.ptr != 0)
+			if (uptr rval = to_val(r.m_ptr))
 			{
 				m_val.raw() = rval;
 				d(rval)->refs += c_ref_mask + 1;
@@ -666,7 +643,7 @@ namespace stx
 		template <typename U> requires same_ptr_implicit_v<T, U>
 		atomic_ptr(shared_ptr<U>&& r) noexcept
 		{
-			if (fat_ptr rval = to_val(r.m_ptr); rval.ptr != 0)
+			if (uptr rval = to_val(r.m_ptr))
 			{
 				m_val.raw() = rval;
 				d(rval)->refs += c_ref_mask;
@@ -678,7 +655,7 @@ namespace stx
 		template <typename U> requires same_ptr_implicit_v<T, U>
 		atomic_ptr(single_ptr<U>&& r) noexcept
 		{
-			if (fat_ptr rval = to_val(r.m_ptr); rval.ptr != 0)
+			if (uptr rval = to_val(r.m_ptr))
 			{
 				m_val.raw() = rval;
 				d(rval)->refs += c_ref_mask;
@@ -689,13 +666,13 @@ namespace stx
 
 		~atomic_ptr() noexcept
 		{
-			const fat_ptr v = m_val.raw();
+			const uptr v = m_val.raw();
 
-			if (v.ptr)
+			if (v >> c_ref_size)
 			{
 				const auto o = d(v);
 
-				if (!o->refs.sub_fetch(c_ref_mask + 1 - (v.ref_ctr & c_ref_mask)))
+				if (!o->refs.sub_fetch(c_ref_mask + 1 - (v & c_ref_mask)))
 				{
 					o->destroy.load()(o);
 				}
@@ -744,11 +721,11 @@ namespace stx
 			shared_type r;
 
 			// Add reference
-			const auto [prev, did_ref] = m_val.fetch_op([](fat_ptr& val)
+			const auto [prev, did_ref] = m_val.fetch_op([](uptr& val)
 			{
-				if (val.ptr)
+				if (val >> c_ref_size)
 				{
-					val.ref_ctr++;
+					val++;
 					return true;
 				}
 
@@ -766,11 +743,11 @@ namespace stx
 			r.d()->refs++;
 
 			// Dereference if still the same pointer
-			const auto [_, did_deref] = m_val.fetch_op([prev = prev](fat_ptr& val)
+			const auto [_, did_deref] = m_val.fetch_op([prev = prev](uptr& val)
 			{
-				if (val.ptr == prev.ptr)
+				if (val >> c_ref_size == prev >> c_ref_size)
 				{
-					val.ref_ctr--;
+					val--;
 					return true;
 				}
 
@@ -793,11 +770,11 @@ namespace stx
 			shared_type r;
 
 			// Add reference
-			const auto [prev, did_ref] = m_val.fetch_op([](fat_ptr& val)
+			const auto [prev, did_ref] = m_val.fetch_op([](uptr& val)
 			{
-				if (val.ptr)
+				if (val >> c_ref_size)
 				{
-					val.ref_ctr++;
+					val++;
 					return true;
 				}
 
@@ -834,11 +811,11 @@ namespace stx
 			}
 
 			// Dereference if still the same pointer
-			const auto [_, did_deref] = m_val.fetch_op([prev = prev](fat_ptr& val)
+			const auto [_, did_deref] = m_val.fetch_op([prev = prev](uptr& val)
 			{
-				if (val.ptr == prev.ptr)
+				if (val >> c_ref_size == prev >> c_ref_size)
 				{
-					val.ref_ctr--;
+					val--;
 					return true;
 				}
 
@@ -899,7 +876,7 @@ namespace stx
 
 			atomic_ptr old;
 			old.m_val.raw() = m_val.exchange(to_val(r.m_ptr));
-			old.m_val.raw().ref_ctr += 1;
+			old.m_val.raw() += 1;
 
 			r.m_ptr = std::launder(ptr_to(old.m_val));
 			return r;
@@ -915,7 +892,7 @@ namespace stx
 
 			atomic_ptr old;
 			old.m_val.raw() = m_val.exchange(to_val(value.m_ptr));
-			old.m_val.raw().ref_ctr += 1;
+			old.m_val.raw() += 1;
 
 			value.m_ptr = std::launder(ptr_to(old.m_val));
 			return value;
@@ -934,21 +911,21 @@ namespace stx
 
 			atomic_ptr old;
 
-			const fat_ptr _val = m_val.fetch_op([&](fat_ptr& val)
+			const uptr _val = m_val.fetch_op([&](uptr& val)
 			{
-				if (val.ptr == _old)
+				if (val >> c_ref_size == _old)
 				{
 					// Set new value
-					val = to_val(_new);
+					val = _new << c_ref_size;
 				}
-				else if (val.ptr != 0)
+				else if (val)
 				{
 					// Reference previous value
-					val.ref_ctr++;
+					val++;
 				}
 			});
 
-			if (_val.ptr == _old)
+			if (_val >> c_ref_size == _old)
 			{
 				// Success (exch is consumed, cmp_and_old is unchanged)
 				if (exch.m_ptr)
@@ -965,10 +942,9 @@ namespace stx
 			old_exch.m_val.raw() = to_val(std::exchange(exch.m_ptr, nullptr));
 
 			// Set to reset old cmp_and_old value
-			old.m_val.raw() = to_val(cmp_and_old.m_ptr);
-			old.m_val.raw().ref_ctr |= c_ref_mask;
+			old.m_val.raw() = to_val(cmp_and_old.m_ptr) | c_ref_mask;
 
-			if (!_val.ptr)
+			if (!_val)
 			{
 				return false;
 			}
@@ -978,11 +954,11 @@ namespace stx
 			cmp_and_old.d()->refs++;
 
 			// Dereference if still the same pointer
-			const auto [_, did_deref] = m_val.fetch_op([_val](fat_ptr& val)
+			const auto [_, did_deref] = m_val.fetch_op([_val](uptr& val)
 			{
-				if (val.ptr == _val.ptr)
+				if (val >> c_ref_size == _val >> c_ref_size)
 				{
-					val.ref_ctr--;
+					val--;
 					return true;
 				}
 
@@ -1021,12 +997,12 @@ namespace stx
 
 			atomic_ptr old;
 
-			const auto [_val, ok] = m_val.fetch_op([&](fat_ptr& val)
+			const auto [_val, ok] = m_val.fetch_op([&](uptr& val)
 			{
-				if (val.ptr == _old)
+				if (val >> c_ref_size == _old)
 				{
 					// Set new value
-					val = to_val(_new);
+					val = _new << c_ref_size;
 					return true;
 				}
 
@@ -1083,9 +1059,9 @@ namespace stx
 			do
 			{
 				// Update old head with current value
-				next.m_ptr = std::launder(ptr_to(old.m_val.raw()));
+				next.m_ptr = reinterpret_cast<T*>(old.m_val.raw() >> c_ref_size);
 
-			} while (!m_val.compare_exchange(old.m_val.raw(), to_val(exch.m_ptr)));
+			} while (!m_val.compare_exchange(old.m_val.raw(), reinterpret_cast<uptr>(exch.m_ptr) << c_ref_size));
 
 			// This argument is consumed (moved from)
 			exch.m_ptr = nullptr;
@@ -1093,19 +1069,19 @@ namespace stx
 			if (next.m_ptr)
 			{
 				// Compensation for `next` assignment
-				old.m_val.raw().ref_ctr += 1;
+				old.m_val.raw() += 1;
 			}
 		}
 
 		// Simple atomic load is much more effective than load(), but it's a non-owning reference
 		T* observe() const noexcept
 		{
-			return std::launder(ptr_to(m_val));
+			return reinterpret_cast<T*>(m_val >> c_ref_size);
 		}
 
 		explicit constexpr operator bool() const noexcept
 		{
-			return observe() != nullptr;
+			return m_val != 0;
 		}
 
 		template <typename U> requires same_ptr_implicit_v<T, U>
@@ -1120,24 +1096,19 @@ namespace stx
 			return static_cast<volatile const void*>(observe()) == r.get();
 		}
 
-		atomic_t<u32> &get_wait_atomic()
-		{
-			return *utils::bless<atomic_t<u32>>(&m_val.raw().is_non_null);
-		}
-
 		void wait(std::nullptr_t, atomic_wait_timeout timeout = atomic_wait_timeout::inf)
 		{
-			get_wait_atomic().wait(0, timeout);
+			utils::bless<atomic_t<u32>>(&m_val)[1].wait(0, timeout);
 		}
 
 		void notify_one()
 		{
-			get_wait_atomic().notify_one();
+			utils::bless<atomic_t<u32>>(&m_val)[1].notify_one();
 		}
 
 		void notify_all()
 		{
-			get_wait_atomic().notify_all();
+			utils::bless<atomic_t<u32>>(&m_val)[1].notify_all();
 		}
 	};
 
@@ -1165,6 +1136,11 @@ namespace stx
 		explicit constexpr operator bool() const noexcept
 		{
 			return false;
+		}
+
+		constexpr std::nullptr_t get() const noexcept
+		{
+			return nullptr;
 		}
 
 	} null_ptr;

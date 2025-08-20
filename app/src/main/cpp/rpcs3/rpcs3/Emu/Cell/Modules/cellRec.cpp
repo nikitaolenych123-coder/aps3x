@@ -828,8 +828,13 @@ void rec_info::stop_video_provider(bool flush)
 {
 	cellRec.notice("Stopping video provider.");
 
-	// Join thread
-	video_provider_thread.reset();
+	if (video_provider_thread)
+	{
+		auto& thread = *video_provider_thread;
+		thread = thread_state::aborting;
+		thread();
+		video_provider_thread.reset();
+	}
 
 	// Flush the ringbuffer if necessary.
 	// This should only happen if the video sink is not the encoder itself.
@@ -889,7 +894,7 @@ void rec_info::stop_video_provider(bool flush)
 	}
 }
 
-bool create_path(std::string& out, std::string dir_name, const std::string& file_name)
+bool create_path(std::string& out, std::string dir_name, std::string file_name)
 {
 	out.clear();
 
@@ -898,7 +903,7 @@ bool create_path(std::string& out, std::string dir_name, const std::string& file
 		return false;
 	}
 
-	out = std::move(dir_name);
+	out = dir_name;
 
 	if (!out.empty() && out.back() != '/')
 	{

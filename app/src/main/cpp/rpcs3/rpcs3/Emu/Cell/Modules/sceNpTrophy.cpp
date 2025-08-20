@@ -592,6 +592,7 @@ error_code sceNpTrophyRegisterContext(ppu_thread& ppu, u32 context, u32 handle, 
 
 	// open trophy pack file
 	std::string trp_path = vfs::get(Emu.GetDir() + "TROPDIR/" + ctxt->trp_name + "/TROPHY.TRP");
+
     fs::file stream;
     if(Emu.GetIsoFs()&&trp_path[0]==':')
         stream=fs::file(*Emu.GetIsoFs(), trp_path);
@@ -720,9 +721,9 @@ error_code sceNpTrophyRegisterContext(ppu_thread& ppu, u32 context, u32 handle, 
 
 	lock2.unlock();
 
-	lv2_obj::sleep(ppu);
+	struct register_context_thread : register_context_thread_name
 	{
-		const s32 progress_cb_count = ::narrow<s32>(tropusr->GetTrophiesCount()) - 1;
+		void operator()(s32 progress_cb_count, u32 context, vm::ptr<SceNpTrophyStatusCallback> statusCb, vm::ptr<void> arg) const
 		{
 			// This emulates vsh sending the events and ensures that not 2 events are processed at once
 			const std::pair<SceNpTrophyStatus, s32> statuses[] =
@@ -735,13 +736,6 @@ error_code sceNpTrophyRegisterContext(ppu_thread& ppu, u32 context, u32 handle, 
 
 			// Create a counter which is destroyed after the function ends
 			const auto queued = std::make_shared<atomic_t<u32>>(0);
-
-			u32 total_events = 0;
-
-			for (auto status : statuses)
-			{
-				total_events += status.second + 1;
-			}
 
 			for (auto status : statuses)
 			{
@@ -765,9 +759,8 @@ error_code sceNpTrophyRegisterContext(ppu_thread& ppu, u32 context, u32 handle, 
 
 					u64 current = get_system_time();
 
-					// Minimum register trophy time 2 seconds globally.
-					const u64 until_min = current + (2'000'000 / total_events);
-					const u64 until_max = until_min + 50'000;
+					const u64 until_max = current + 300'000;
+					const u64 until_min = current + 100'000;
 
 					// If too much time passes just send the rest of the events anyway
 					for (u32 old_value = *queued; current < (old_value ? until_max : until_min);
@@ -784,13 +777,19 @@ error_code sceNpTrophyRegisterContext(ppu_thread& ppu, u32 context, u32 handle, 
 
 						if (thread_ctrl::state() == thread_state::aborting)
 						{
-							return {};
+							return;
 						}
 					}
 				}
 			}
 		}
-	}
+	};
+
+	lv2_obj::sleep(ppu);
+
+	g_fxo->get<named_thread<register_context_thread>>()(::narrow<s32>(tropusr->GetTrophiesCount()) - 1, context, statusCb, arg);
+
+	thread_ctrl::wait_for(200'000);
 
 	return CELL_OK;
 }

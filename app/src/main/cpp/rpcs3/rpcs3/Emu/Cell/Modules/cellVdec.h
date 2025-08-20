@@ -133,16 +133,6 @@ struct CellVdecResourceEx
 	be_t<u32> spursResource_addr;
 };
 
-struct CellVdecResourceExt // speculative
-{
-	be_t<u32> memAddr;
-	be_t<u32> memSize;
-	be_t<s32> ppuThreadPriority;
-	be_t<u32> ppuThreadStackSize;
-	u8 unk[12];
-	be_t<u32> numOfSpus;
-};
-
 // Access Unit Information
 struct CellVdecAuInfo
 {

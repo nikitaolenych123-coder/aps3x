@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Emu/Cell/PPUModule.h"
-#include "Emu/Io/Keyboard.h"
+#include "cellKb.h"
 
 LOG_CHANNEL(cellKey2char);
 

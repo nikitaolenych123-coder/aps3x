@@ -59,7 +59,13 @@ struct sce_np_util_manager
 
 	void join_thread()
 	{
-		bandwidth_test_thread.reset();
+		if (bandwidth_test_thread)
+		{
+			auto& thread = *bandwidth_test_thread;
+			thread = thread_state::aborting;
+			thread();
+			bandwidth_test_thread.reset();
+		}
 	}
 };
 

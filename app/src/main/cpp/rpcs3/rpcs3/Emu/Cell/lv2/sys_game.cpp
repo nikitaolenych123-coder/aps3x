@@ -10,7 +10,6 @@
 #include "Utilities/StrUtil.h"
 #include "Utilities/Thread.h"
 
-#include "Emu/Cell/timers.hpp"
 #include "sys_game.h"
 
 LOG_CHANNEL(sys_game);

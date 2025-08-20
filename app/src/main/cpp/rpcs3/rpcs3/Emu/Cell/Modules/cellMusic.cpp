@@ -177,11 +177,6 @@ struct music_state
 				return CELL_MUSIC_ERROR_NO_MORE_CONTENT;
 			}
 
-			if (!fs::is_file(path))
-			{
-				cellMusic.error("set_playback_command: File does not exist: '%s'", path);
-			}
-
 			switch (command)
 			{
 			case CELL_MUSIC_PB_CMD_FASTFORWARD:
@@ -218,29 +213,19 @@ error_code cell_music_select_contents()
 	error_code error = rsx::overlays::show_media_list_dialog(rsx::overlays::media_list_dialog::media_type::audio, vfs_dir_path, title,
 		[&music](s32 status, utils::media_info info)
 		{
-			sysutil_register_cb([&music, info = std::move(info), status](ppu_thread& ppu) -> s32
+			sysutil_register_cb([&music, info, status](ppu_thread& ppu) -> s32
 			{
 				std::lock_guard lock(music.mtx);
 				const u32 result = status >= 0 ? u32{CELL_OK} : u32{CELL_MUSIC_CANCELED};
 				if (result == CELL_OK)
 				{
-					// Let's always choose the whole directory for now
-					std::string track;
-					std::string dir = info.path;
-					if (fs::is_file(info.path))
-					{
-						track = std::move(dir);
-						dir = fs::get_parent_dir(track);
-					}
-
 					music_selection_context context{};
-					context.set_playlist(dir);
-					context.set_track(track);
+					context.set_playlist(info.path);
 					// TODO: context.repeat_mode = CELL_SEARCH_REPEATMODE_NONE;
 					// TODO: context.context_option = CELL_SEARCH_CONTEXTOPTION_NONE;
-					music.current_selection_context = std::move(context);
+					music.current_selection_context = context;
 					music.current_selection_context.create_playlist(music_selection_context::get_next_hash());
-					cellMusic.success("Media list dialog: selected entry '%s'", music.current_selection_context.playlist.front());
+					cellMusic.success("Media list dialog: selected entry '%s'", context.playlist.front());
 				}
 				else
 				{
@@ -571,7 +556,7 @@ error_code cellMusicSetPlaybackCommand2(s32 command, vm::ptr<void> param)
 	auto& music = g_fxo->get<music_state>();
 
 	if (!music.func)
-		return { CELL_MUSIC2_ERROR_GENERIC, "Not initialized" };
+		return CELL_MUSIC2_ERROR_GENERIC;
 
 	error_code result = CELL_OK;
 
@@ -600,7 +585,7 @@ error_code cellMusicSetPlaybackCommand(s32 command, vm::ptr<void> param)
 	auto& music = g_fxo->get<music_state>();
 
 	if (!music.func)
-		return { CELL_MUSIC_ERROR_GENERIC, "Not initialized" };
+		return CELL_MUSIC_ERROR_GENERIC;
 
 	error_code result = CELL_OK;
 

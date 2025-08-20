@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "util/logs.hpp"
 #include "util/vm.hpp"
 #include "util/asm.hpp"
 #ifdef _WIN32
@@ -318,15 +319,15 @@ namespace utils
 		ensure(::VirtualAlloc(pointer, size, MEM_COMMIT, +prot));
 #else
 		const u64 ptr64 = reinterpret_cast<u64>(pointer);
-		ensure(::mprotect(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), +prot) != -1);
+		ensure(::mprotect(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), +prot) != -1);
 
 		if constexpr (c_madv_dump != 0)
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), c_madv_dump) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), c_madv_dump) != -1);
 		}
 		else
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), MADV_WILLNEED) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), MADV_WILLNEED) != -1);
 		}
 #endif
 	}
@@ -355,11 +356,11 @@ namespace utils
 
 		if constexpr (c_madv_no_dump != 0)
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), c_madv_no_dump) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), c_madv_no_dump) != -1);
 		}
 		else
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), c_madv_free) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), c_madv_free) != -1);
 		}
 #endif
 	}
@@ -387,17 +388,17 @@ namespace utils
 		{
 			if (size % 0x200000 == 0)
 			{
-				::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), c_madv_hugepage);
+				::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), c_madv_hugepage);
 			}
 		}
 
 		if constexpr (c_madv_dump != 0)
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), c_madv_dump) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), c_madv_dump) != -1);
 		}
 		else
 		{
-			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), MADV_WILLNEED) != -1);
+			ensure(::madvise(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), MADV_WILLNEED) != -1);
 		}
 #endif
 	}
@@ -447,7 +448,7 @@ namespace utils
 		}
 #else
 		const u64 ptr64 = reinterpret_cast<u64>(pointer);
-		ensure(::mprotect(reinterpret_cast<void*>(ptr64 & -get_page_size()), size + (ptr64 & (get_page_size() - 1)), +prot) != -1);
+		ensure(::mprotect(reinterpret_cast<void*>(ptr64 & -c_page_size), size + (ptr64 & (c_page_size - 1)), +prot) != -1);
 #endif
 	}
 
@@ -686,8 +687,9 @@ namespace utils
 #else
 
 #ifdef __linux__
-#ifdef ANDROID
-		if constexpr (constexpr char c = '?')
+
+#if defined(__ANDROID__)
+        if (const char c = 1;c)
 #else
 		if (const char c = fs::file("/proc/sys/vm/overcommit_memory").read<char>(); c == '0' || c == '1')
 #endif
@@ -969,23 +971,19 @@ namespace utils
 	{
 		void* ptr = m_ptr;
 
-		for (void* mapped = nullptr; !ptr;)
+		while (!ptr)
 		{
-			if (!mapped)
-			{
-				mapped = this->map(nullptr, prot);
-			}
+			const auto mapped = this->map(nullptr, prot);
 
 			// Install mapped memory
-			if (m_ptr.compare_exchange(ptr, mapped))
-			{
-				ptr = mapped;
-			}
-			else if (ptr)
+			if (!m_ptr.compare_exchange(ptr, mapped))
 			{
 				// Mapped already, nothing to do.
-				ensure(ptr != mapped);
 				this->unmap(mapped);
+			}
+			else
+			{
+				ptr = mapped;
 			}
 		}
 
@@ -1063,4 +1061,4 @@ namespace utils
 			this->unmap(ptr);
 		}
 	}
-} // namespace utils
+}

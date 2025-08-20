@@ -29,7 +29,13 @@ namespace utils
 
 	bool has_avx10();
 
+	bool has_avx10_512();
+
 	u32 avx10_isa_version();
+
+	bool has_avx512_256();
+
+	bool has_avx512_icl_256();
 
 	bool has_xop();
 
@@ -61,17 +67,7 @@ namespace utils
 
 	std::string get_firmware_version();
 
-	struct OS_version
-	{
-		std::string type;
-		std::string arch;
-		int version_major = 0;
-		int version_minor = 0;
-		int version_patch = 0;
-	};
-	OS_version get_OS_version();
-
-	std::string get_OS_version_string();
+	std::string get_OS_version();
 
 	int get_maxfiles();
 
@@ -98,6 +94,4 @@ namespace utils
 	{
 		return s_tsc_freq;
 	}
-
-	std::pair<bool, usz> string_to_number(std::string_view str);
 }

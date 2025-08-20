@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Emu/Cell/PPUModule.h"
+#include "cellSail.h"
 
 LOG_CHANNEL(cellSailRec);
 

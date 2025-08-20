@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/types.hpp"
+#include "util/endian.hpp"
 #include "Emu/Memory/vm_ptr.h"
 #include <string>
 #include <vector>
@@ -361,5 +362,5 @@ class SaveDialogBase
 public:
 	virtual ~SaveDialogBase();
 
-	virtual s32 ShowSaveDataList(const std::string& base_dir, std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) = 0;
+	virtual s32 ShowSaveDataList(std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) = 0;
 };

@@ -161,8 +161,7 @@ enum CellGemVideoConvertFormatEnum : s32
 // External device IDs (types)
 enum
 {
-	SHARP_SHOOTER_DEVICE_ID = 0x8081,
-	RACING_WHEEL_DEVICE_ID  = 0x8101
+	SHARP_SHOOTER_DEVICE_ID = 0x8081
 };
 
 struct CellGemAttribute
