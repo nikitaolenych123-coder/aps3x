@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open_source_licenses">Lisensi Sumber Terbuka</string>
+	<string name="buy_premium">Beli aPS3e Premium</string>
+
 	<string name="device_unsupport_vulkan_msg">Perangkat Anda tidak mendukung Vulkan dan tidak dapat memenuhi persyaratan minimum untuk menjalankan aplikasi ini, silakan keluar.</string>
 
 	<string name="use_cores_ppu">Gunakan Core(PPU)</string>

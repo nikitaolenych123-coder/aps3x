@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open_source_licenses">Giấy phép mã nguồn mở</string>
+<string name="buy_premium">Mua aPS3e Premium</string>
+
 <string name="device_unsupport_vulkan_msg">Thiết bị của bạn không hỗ trợ Vulkan và không đáp ứng được các yêu cầu tối thiểu để chạy ứng dụng này, vui lòng thoát.</string>
 
 	<string name="use_cores_ppu">Sử dụng Nhân (PPU)</string>

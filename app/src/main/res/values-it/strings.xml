@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <string name="open_source_licenses">Licenze Open Source</string>
+    <string name="buy_premium">Acquista aPS3e Premium</string>
+
     <string name="device_unsupport_vulkan_msg">Il tuo dispositivo non supporta Vulkan e non soddisfa i requisiti minimi necessari per eseguire questa applicazione, per favore esci.</string>
     <!--string name="gratitude_content">Grazie a Ruban per tutte le ICONE\n\n
 		Grazie a SRC267 (Sting) per la gestione di reddit/discord\n\n

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open_source_licenses">ओपन सोर्स लाइसेंस</string>
+<string name="buy_premium">aPS3e Premium खरीदें</string>
 
 	<string name="device_unsupport_vulkan_msg">आपका डिवाइस Vulkan का समर्थन नहीं करता है और इस एप्लिकेशन को चलाने के लिए न्यूनतम आवश्यकताओं को पूरा नहीं कर सकता है, कृपया बाहर निकलें।</string>
 

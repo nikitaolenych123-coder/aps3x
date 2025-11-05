@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open_source_licenses">مجوزهای منبع باز</string>
+<string name="buy_premium">خرید aPS3e Premium</string>
 
     <string name="device_unsupport_vulkan_msg">دستگاه شما از Vulkan پشتیبانی نمی‌کند و حداقل نیازمندی‌های لازم را برای اجرای این برنامه فراهم نمی‌کند، لطفاً خارج شوید.</string>
 

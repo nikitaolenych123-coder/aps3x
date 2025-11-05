@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
+    <string name="open_source_licenses">オープンソースライセンス</string>
+<string name="buy_premium">aPS3e Premiumを購入</string>
 
     <string name="device_unsupport_vulkan_msg">お使いの端末はVulkanをサポートしていません。このアプリケーションを実行するために必要な最低限の要件を満たしていませんので、終了してください。</string>
 

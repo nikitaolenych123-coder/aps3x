@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string name="open_source_licenses">开源许可证</string>
+<string name="buy_premium">购买 aPS3e Premium</string>
+
+
     <string name="device_unsupport_vulkan_msg">您的设备不支持 Vulkan，无法满足运行此应用程序的最低要求，请退出。</string>
 
     <string name="use_cores_ppu">使用核心(PPU)</string>

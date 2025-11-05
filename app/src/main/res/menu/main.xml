@@ -1,7 +1,15 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menu_refresh_list"
-        android:title="@string/refresh_list"/>
+        android:title="@string/refresh_list"
+		android:icon="@drawable/ic_menu_refresh"
+		app:showAsAction="always"/>
+	<item
+		android:id="@+id/menu_settings"
+		android:title="@string/settings"
+		android:icon="@android:drawable/ic_menu_preferences"
+		app:showAsAction="always"/>
 	<item
         android:id="@+id/menu_install_firmware"
         android:title="@string/install_firmware"/>
@@ -24,9 +32,6 @@
         android:id="@+id/menu_virtual_pad_edit"
         android:title="@string/virtual_pad_edit"/>
 	<item
-        android:id="@+id/menu_settings"
-        android:title="@string/settings"/>
-	<item
 		android:id="@+id/menu_open_file_mgr"
 		android:title="@string/open_file_manager"/>
 	<item
@@ -36,5 +41,9 @@
 	<item
 		android:id="@+id/menu_quick_start_page"
 		android:title="@string/quick_start_page"/>
+
+	<item
+		android:id="@+id/menu_buy_premium"
+		android:title="@string/buy_premium"/>
 	
 </menu>

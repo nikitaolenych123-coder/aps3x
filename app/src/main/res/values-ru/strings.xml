@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open_source_licenses">Лицензии с открытым исходным кодом</string>
+	<string name="buy_premium">Купить aPS3e Premium</string>
+
 <string name="device_unsupport_vulkan_msg">Ваше устройство не поддерживает Vulkan и не соответствует минимальным требованиям для запуска этого приложения, пожалуйста, выйдите.</string>
 
 	<string name="use_cores_ppu">Использовать ядра (PPU)</string>

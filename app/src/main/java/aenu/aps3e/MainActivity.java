@@ -17,6 +17,7 @@ import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.database.Cursor;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -31,7 +32,10 @@ import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.format.DateFormat;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -237,6 +241,15 @@ public class MainActivity extends AppCompatActivity {
 		/*if(!getResources().getConfiguration().getLocales().get(0).equals(Locale.SIMPLIFIED_CHINESE))
 			menu.removeItem(R.id.menu_update_log);*/
 		//menu.removeItem(R.id.menu_set_iso_dir);
+		if(getPackageName().equals("aenu.aps3e.premium")){
+			menu.removeItem(R.id.menu_buy_premium);
+		}
+		else{
+			MenuItem buy_premium=menu.findItem(R.id.menu_buy_premium);
+			SpannableString s=new SpannableString(buy_premium.getTitle());
+			s.setSpan(new ForegroundColorSpan(Color.BLUE),0,s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+			buy_premium.setTitle(s);
+		}
         return true;
     }
 	
@@ -336,6 +349,16 @@ public class MainActivity extends AppCompatActivity {
 			Intent it=new Intent(this,QuickStartActivity.class);
 			it.setAction(QuickStartActivity.ACTION_REENTRY);
 			startActivity(it);
+			return true;
+		}
+		else if(item_id==R.id.menu_buy_premium){
+
+			try{
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=aenu.aps3e.premium")));
+			}catch (Exception e){
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=aenu.aps3e.premium")));
+			}
+
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
@@ -966,7 +989,7 @@ public class MainActivity extends AppCompatActivity {
 					pfd_.close();
 					Emulator.MetaInfo meta=Emulator.get.meta_info_from_iso(pfd,iso.getUri().toString());
 					if(meta!=null)
-					metas.add(meta);
+						metas.add(meta);
                 } catch (Exception e) {
 
                 }
@@ -986,6 +1009,13 @@ public class MainActivity extends AppCompatActivity {
 			if(info.eboot_path.startsWith(get_disc_game_dir().getAbsolutePath()))
 				return true;
 			return false;
+		}
+
+		public Emulator.MetaInfo fetch_dlc_update_info(String serial){
+			File dir=new File(get_hdd0_game_dir(),serial);
+			if(!dir.exists()) return null;
+			Emulator.MetaInfo info=Emulator.get.meta_info_from_dir(dir.getAbsolutePath());
+			return info;
 		}
 
 		void _del_trophy_data(String serial){
@@ -1115,6 +1145,21 @@ public class MainActivity extends AppCompatActivity {
 			
 			TextView name=(TextView)curView.findViewById(R.id.game_name);
 			name.setText(mi.name);
+
+			TextView version=(TextView)curView.findViewById(R.id.game_version);
+			version.setText(mi.version);
+			Emulator.MetaInfo update_info=null;
+			if(mi.category.equals("DG")&&(update_info=fetch_dlc_update_info(mi.serial))!=null){
+				version.setTextColor(Color.MAGENTA);
+				version.setText(update_info.version);
+			}
+			TextView config_type=(TextView)curView.findViewById(R.id.config_type);
+			if(Application.get_custom_cfg_file(mi.serial).exists()){
+				config_type.setText("Custom");
+				config_type.setTextColor(Color.MAGENTA);
+			}else{
+				config_type.setText("Default");
+			}
 
             return curView;
         } 

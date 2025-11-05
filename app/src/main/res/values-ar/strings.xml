@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+<string name="open_source_licenses">تراخيص المصدر المفتوح</string>
+<string name="buy_premium">شراء aPS3e Premium</string>
+
    <string name="device_unsupport_vulkan_msg">جهازك لا يدعم Vulkan ولا يفي الحد الأدنى من المتطلبات لتشغيل هذا التطبيق، يرجى الخروج.</string>
     <string name="emulator_settings_video_performance_overlay_font">الخط</string>
     <string name="emulator_settings_audio_disable_sampling_skip">تعطيل تخطي أخذ العينات</string>

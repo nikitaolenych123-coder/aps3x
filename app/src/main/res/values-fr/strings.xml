@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<!-- +++++++++++++++++++++++++++ -->
+	<!--无法转义',&apos;会报错 -->
+	<!-- +++++++++++++++++++++++++++ -->
+
+	<string name="open_source_licenses">Licences Open Source</string>
+	<string name="buy_premium">Acheter aPS3e Premium</string>
 
 	<string name="device_unsupport_vulkan_msg">Votre appareil ne prend pas en charge Vulkan et ne satisfait pas aux exigences minimales requises pour exécuter cette application. Veuillez quitter.</string>
     <string name="HOME_MENU_SETTINGS_INPUT_PAD_MODE">Mode du gestionnaire de manette</string>
