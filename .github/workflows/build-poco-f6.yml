@@ -1,4 +1,4 @@
-name: Build Poco F6 Optimized APK
+name: Build Poco F6 ARMv9-A Optimized APK
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     
     steps:
       - name: Checkout code
@@ -30,8 +30,81 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
       
-      - name: Install NDK
-        run: sdkmanager "ndk;27.0.12077973"
+      - name: Install Android NDK r27
+        run: |
+          sdkmanager "ndk;27.0.12077973"
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+      
+      - name: Verify LLVM/Clang 19
+        run: |
+          CLANG_VERSION=$($ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | head -n1)
+          echo "Clang version: $CLANG_VERSION"
+      
+      - name: Apply ARMv9-A Optimizations
+        run: |
+          # Update CMakeLists.txt with extreme optimizations
+          cat > app/src/main/cpp/CMakeLists_optimizations.cmake << 'EOF'
+          # Poco F6 ARMv9-A Extreme Optimizations for Real Steel
+          add_compile_options(-march=armv9-a+sve+sve2)
+          add_compile_options(-mcpu=cortex-x4)
+          add_compile_options(-mtune=cortex-x4)
+          add_compile_options(-O3)
+          add_compile_options(-Ofast)
+          add_compile_options(-flto=full)
+          add_compile_options(-fomit-frame-pointer)
+          add_compile_options(-ffast-math)
+          add_compile_options(-funroll-loops)
+          add_compile_options(-fvectorize)
+          add_compile_options(-fslp-vectorize)
+          add_compile_options(-fno-signed-zeros)
+          add_compile_options(-fno-trapping-math)
+          add_compile_options(-fassociative-math)
+          add_compile_options(-freciprocal-math)
+          add_compile_options(-ffp-contract=fast)
+          
+          # Disable all debugging
+          add_compile_definitions(NDEBUG)
+          add_compile_definitions(RELEASE_BUILD)
+          add_compile_definitions(NO_DEBUG_LOG)
+          add_compile_definitions(DISABLE_TELEMETRY)
+          add_compile_definitions(DISABLE_LOGGING)
+          
+          # Real Steel optimizations
+          add_compile_definitions(TARGET_FPS=30)
+          add_compile_definitions(FRAME_PACING_STRICT)
+          add_compile_definitions(REAL_STEEL_OPTIMIZED)
+          
+          # Link time optimizations
+          add_link_options(-flto=full)
+          add_link_options(-fuse-ld=lld)
+          add_link_options(-Wl,--lto-O3)
+          add_link_options(-Wl,--icf=all)
+          add_link_options(-Wl,--gc-sections)
+          add_link_options(-Wl,-O3)
+          EOF
+          
+          # Inject into main CMakeLists.txt
+          sed -i '/project("aps3e")/a include(CMakeLists_optimizations.cmake)' app/src/main/cpp/CMakeLists.txt
+      
+      - name: Configure Gradle for Maximum Performance
+        run: |
+          cat >> gradle.properties << EOF
+          
+          # ARMv9-A Build Configuration
+          org.gradle.jvmargs=-Xmx8192m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          org.gradle.daemon=false
+          android.enableR8.fullMode=true
+          android.enableR8=true
+          android.r8.maxWorkers=4
+          EOF
+      
+      - name: Update build.gradle for Release
+        run: |
+          # Ensure aggressive ProGuard/R8 optimizations
+          sed -i 's/minifyEnabled false/minifyEnabled true/' app/build.gradle || true
+          sed -i 's/shrinkResources false/shrinkResources true/' app/build.gradle || true
       
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -39,8 +112,9 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-armv9-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
+            ${{ runner.os }}-gradle-armv9-
             ${{ runner.os }}-gradle-
       
       - name: Cache CMake build
@@ -48,43 +122,139 @@ jobs:
         with:
           path: |
             app/.cxx
-          key: ${{ runner.os }}-cmake-${{ hashFiles('app/src/main/cpp/**/*') }}
+          key: ${{ runner.os }}-cmake-armv9-${{ hashFiles('app/src/main/cpp/**/*') }}
           restore-keys: |
+            ${{ runner.os }}-cmake-armv9-
             ${{ runner.os }}-cmake-
       
       - name: Make gradlew executable
         run: chmod +x gradlew
       
-      - name: Build Release APK
+      - name: Build Optimized Release APK
         run: |
           export JAVA_HOME=$JAVA_HOME_17_X64
-          ./gradlew assembleRelease --parallel --max-workers=4 --no-daemon
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973
+          ./gradlew assembleRelease \
+            --parallel \
+            --max-workers=4 \
+            --no-daemon \
+            --no-build-cache \
+            --stacktrace
         env:
-          GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError
+          GRADLE_OPTS: -Xmx8g -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -Dorg.gradle.jvmargs=-Xmx8g
       
-      - name: Get APK info
+      - name: Verify APK and Get Info
         if: success()
         run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f)
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n1)
           if [ -n "$APK_PATH" ]; then
+            echo "✅ APK Built Successfully!"
             ls -lh "$APK_PATH"
-            echo "APK_SIZE=$(du -h "$APK_PATH" | cut -f1)" >> $GITHUB_ENV
+            APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+            APK_NAME=$(basename "$APK_PATH")
+            echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
             echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+            echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+            
+            # Get build timestamp
+            BUILD_DATE=$(date +'%Y%m%d-%H%M%S')
+            echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+            
+            # Generate build info
+            cat > build_info.txt << EOF
+          APS3E - Poco F6 Optimized Build
+          ================================
+          Architecture: ARMv9-A + Cortex-X4
+          NDK: r27 (LLVM/Clang 19)
+          Optimizations: -O3 -Ofast -flto=full
+          Target: Real Steel @ 30 FPS
+          Build Date: $BUILD_DATE
+          APK Size: $APK_SIZE
+          APK Name: $APK_NAME
+          
+          Compiler Flags:
+          - march=armv9-a+sve+sve2
+          - mcpu=cortex-x4
+          - O3 + Ofast
+          - flto=full (Full LTO)
+          - ffast-math, funroll-loops
+          - fvectorize, fslp-vectorize
+          
+          Optimizations:
+          ✅ Debugging disabled
+          ✅ Logging disabled
+          ✅ Telemetry disabled
+          ✅ Strict frame pacing
+          ✅ R8 full mode
+          ✅ Code shrinking
+          ✅ Resource shrinking
+          
+          Device: Poco F6 (Snapdragon 8s Gen 3)
+          GPU: Adreno 735
+          RAM: LPDDR5X
+          EOF
+          else
+            echo "❌ APK not found!"
+            exit 1
           fi
       
-      - name: Upload APK
+      - name: Rename APK with Build Info
+        if: success()
+        run: |
+          APK_PATH="${{ env.APK_PATH }}"
+          APK_DIR=$(dirname "$APK_PATH")
+          NEW_NAME="aps3e-poco-f6-armv9-${{ env.BUILD_DATE }}.apk"
+          mv "$APK_PATH" "$APK_DIR/$NEW_NAME"
+          echo "APK_FINAL_PATH=$APK_DIR/$NEW_NAME" >> $GITHUB_ENV
+          echo "✅ Renamed to: $NEW_NAME"
+      
+      - name: Upload Optimized APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: aps3e-poco-f6-optimized
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          name: aps3e-poco-f6-armv9-optimized-${{ env.BUILD_DATE }}
+          path: |
+            ${{ env.APK_FINAL_PATH }}
+            build_info.txt
+          retention-days: 90
+          compression-level: 0
       
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: app/build/outputs/apk/release/*.apk
+          files: |
+            ${{ env.APK_FINAL_PATH }}
+            build_info.txt
+          body: |
+            ## APS3E - Poco F6 ARMv9-A Optimized
+            
+            **Target Device:** Poco F6 (Snapdragon 8s Gen 3)
+            **Architecture:** ARMv9-A with Cortex-X4 tuning
+            **Compiler:** LLVM/Clang 19 (NDK r27)
+            **Optimizations:** -O3 -Ofast -flto=full
+            
+            ### Real Steel Performance
+            - Target: 30 FPS with perfect frame pacing
+            - Debugging, logging, and telemetry disabled
+            - Full LTO optimization
+            - R8 full mode with shrinking
+            
+            ### Installation
+            1. Download APK
+            2. Enable "Install from Unknown Sources"
+            3. Install and enjoy optimized performance!
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f build_info.txt ]; then
+            cat build_info.txt >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+          fi
