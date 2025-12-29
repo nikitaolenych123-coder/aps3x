@@ -40,51 +40,42 @@ jobs:
           CLANG_VERSION=$($ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | head -n1)
           echo "Clang version: $CLANG_VERSION"
       
-      - name: Apply ARMv9-A Optimizations
+      - name: Apply ARMv9-A Optimizations to CMakeLists.txt
         run: |
-          # Update CMakeLists.txt with extreme optimizations
-          cat > app/src/main/cpp/CMakeLists_optimizations.cmake << 'EOF'
-          # Poco F6 ARMv9-A Extreme Optimizations for Real Steel
-          add_compile_options(-march=armv9-a+sve+sve2)
-          add_compile_options(-mcpu=cortex-x4)
-          add_compile_options(-mtune=cortex-x4)
-          add_compile_options(-O3)
-          add_compile_options(-Ofast)
-          add_compile_options(-flto=full)
-          add_compile_options(-fomit-frame-pointer)
-          add_compile_options(-ffast-math)
-          add_compile_options(-funroll-loops)
-          add_compile_options(-fvectorize)
-          add_compile_options(-fslp-vectorize)
-          add_compile_options(-fno-signed-zeros)
-          add_compile_options(-fno-trapping-math)
-          add_compile_options(-fassociative-math)
-          add_compile_options(-freciprocal-math)
-          add_compile_options(-ffp-contract=fast)
+          # Backup original
+          cp app/src/main/cpp/CMakeLists.txt app/src/main/cpp/CMakeLists.txt.bak
           
-          # Disable all debugging
-          add_compile_definitions(NDEBUG)
-          add_compile_definitions(RELEASE_BUILD)
-          add_compile_definitions(NO_DEBUG_LOG)
-          add_compile_definitions(DISABLE_TELEMETRY)
-          add_compile_definitions(DISABLE_LOGGING)
+          # Insert optimizations after project() line
+          cat > /tmp/optimizations.txt << 'EOF'
+
+# === Poco F6 ARMv9-A Extreme Optimizations ===
+add_compile_options(-march=armv9-a+sve+sve2)
+add_compile_options(-mcpu=cortex-x4)
+add_compile_options(-mtune=cortex-x4)
+add_compile_options(-O3)
+add_compile_options(-Ofast)
+add_compile_options(-flto=full)
+add_compile_options(-fomit-frame-pointer)
+add_compile_options(-ffast-math)
+add_compile_options(-funroll-loops)
+add_compile_options(-fvectorize)
+add_compile_options(-fslp-vectorize)
+
+# Disable debugging
+add_compile_definitions(NDEBUG RELEASE_BUILD NO_DEBUG_LOG DISABLE_TELEMETRY DISABLE_LOGGING)
+add_compile_definitions(TARGET_FPS=30 FRAME_PACING_STRICT REAL_STEEL_OPTIMIZED)
+
+# Link optimizations
+add_link_options(-flto=full -fuse-ld=lld -Wl,--lto-O3 -Wl,--icf=all -Wl,--gc-sections -Wl,-O3)
+# === End Optimizations ===
+
+EOF
           
-          # Real Steel optimizations
-          add_compile_definitions(TARGET_FPS=30)
-          add_compile_definitions(FRAME_PACING_STRICT)
-          add_compile_definitions(REAL_STEEL_OPTIMIZED)
+          # Insert after project("aps3e")
+          awk '/project\("aps3e"\)/ {print; system("cat /tmp/optimizations.txt"); next}1' \
+            app/src/main/cpp/CMakeLists.txt.bak > app/src/main/cpp/CMakeLists.txt
           
-          # Link time optimizations
-          add_link_options(-flto=full)
-          add_link_options(-fuse-ld=lld)
-          add_link_options(-Wl,--lto-O3)
-          add_link_options(-Wl,--icf=all)
-          add_link_options(-Wl,--gc-sections)
-          add_link_options(-Wl,-O3)
-          EOF
-          
-          # Inject into main CMakeLists.txt
-          sed -i '/project("aps3e")/a include(CMakeLists_optimizations.cmake)' app/src/main/cpp/CMakeLists.txt
+          echo "✅ CMakeLists.txt updated with ARMv9-A optimizations"
       
       - name: Configure Gradle for Maximum Performance
         run: |
