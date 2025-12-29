@@ -11,12 +11,11 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("aps3e")
 
-# === Poco F6 ARMv9-A Optimizations ===
-add_compile_options(-march=armv9-a)
-add_compile_options(-mcpu=cortex-x4)
-add_compile_options(-mtune=cortex-x4)
+# === Poco F6 Optimizations (Conservative) ===
+add_compile_options(-march=armv8.2-a+crypto+dotprod)
+add_compile_options(-mcpu=cortex-a76)
+add_compile_options(-mtune=cortex-a76)
 add_compile_options(-O3)
-add_compile_options(-flto=thin)
 add_compile_options(-fomit-frame-pointer)
 add_compile_options(-ffast-math)
 add_compile_options(-funroll-loops)
@@ -38,8 +37,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_link_options(-Wl,-z,max-page-size=16384)
 add_link_options(-Wl,--gc-sections)
-add_link_options(-flto=thin)
-add_link_options(-fuse-ld=lld)
 add_link_options(-Wl,--icf=all)
 
 set(CMAKE_CXX_STANDARD 20)
