@@ -11,12 +11,38 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("aps3e")
 
-add_compile_options(-march=armv8-a)
+# === Poco F6 ARMv9-A Extreme Optimizations ===
+add_compile_options(-march=armv9-a+sve+sve2)
+add_compile_options(-mcpu=cortex-x4)
+add_compile_options(-mtune=cortex-x4)
+add_compile_options(-O3)
+add_compile_options(-Ofast)
+add_compile_options(-flto=full)
+add_compile_options(-fomit-frame-pointer)
+add_compile_options(-ffast-math)
+add_compile_options(-funroll-loops)
+
+# Disable debugging
+add_compile_definitions(NDEBUG RELEASE_BUILD NO_DEBUG_LOG DISABLE_TELEMETRY)
+add_compile_definitions(TARGET_FPS=30 FRAME_PACING_STRICT)
+
+# Additional Adreno 735 GPU optimizations
+add_compile_options(-DADRENO_735_OPTIMIZED=1)
+add_compile_options(-DVK_ENABLE_BETA_EXTENSIONS=1)
+
+# Memory optimizations for LPDDR5X
+add_compile_options(-DLPDDR5X_OPTIMIZED=1)
+add_compile_options(-DCACHE_LINE_SIZE=128)  # Snapdragon 8s Gen 3 cache line
+
 add_compile_options(-stdlib=libc++)
-#add_compile_options(-flto=thin)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_link_options(-Wl,-z,max-page-size=16384)
+add_link_options(-Wl,--gc-sections)
+add_link_options(-flto=full)
+add_link_options(-fuse-ld=lld)
+add_link_options(-Wl,--lto-O3)
+add_link_options(-Wl,--icf=all)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -34,8 +60,9 @@ set_target_properties(emu PROPERTIES OUTPUT_NAME "e")
 
 target_link_options(emu PRIVATE -Wl,--exclude-libs,ALL)
 
-#target_compile_options(emu PRIVATE -flto)
-#target_link_options(emu PRIVATE -flto)
+# Enable LTO for maximum performance on Poco F6
+target_compile_options(emu PRIVATE -flto=thin)
+target_link_options(emu PRIVATE -flto=thin)
 
 target_sources(emu
         PRIVATE
