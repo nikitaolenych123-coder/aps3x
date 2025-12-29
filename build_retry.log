@@ -1,0 +1,135 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources FROM-CACHE
+> Task :app:mergeReleaseResources FROM-CACHE
+> Task :app:packageReleaseResources FROM-CACHE
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:processReleaseMainManifest FROM-CACHE
+> Task :app:processReleaseManifest FROM-CACHE
+> Task :app:processReleaseManifestForPackage FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:processReleaseResources
+
+> Task :app:configureCMakeRelease[arm64-v8a]
+C/C++: -- Dependency: adding libc (Android target detected)
+C/C++: ** AsmJit Summary **
+C/C++:    ASMJIT_DIR=/workspaces/aps3x/app/src/main/cpp/rpcs3/3rdparty/asmjit/asmjit
+C/C++:    ASMJIT_TEST=FALSE
+C/C++:    ASMJIT_TARGET_TYPE=EMBED
+C/C++:    ASMJIT_DEPS=c
+C/C++:    ASMJIT_LIBS=c
+C/C++:    ASMJIT_CFLAGS=-DASMJIT_STATIC;-DASMJIT_NO_DEPRECATED
+C/C++:    ASMJIT_PRIVATE_CFLAGS=-Wall;-Wextra;-Wconversion;-fno-math-errno;-fno-threadsafe-statics;-fno-semantic-interposition;-DASMJIT_STATIC;-DASMJIT_NO_DEPRECATED
+C/C++:    ASMJIT_PRIVATE_CFLAGS_DBG=
+C/C++:    ASMJIT_PRIVATE_CFLAGS_REL=-O2;-fmerge-all-constants
+C/C++: CMake Warning (dev) at rpcs3/3rdparty/libpng/libpng/CMakeLists.txt:724 (add_library):
+C/C++:   Policy CMP0069 is not set: INTERPROCEDURAL_OPTIMIZATION is enforced when
+C/C++:   enabled.  Run "cmake --help-policy CMP0069" for policy details.  Use the
+C/C++:   cmake_policy command to set the policy and suppress this warning.
+C/C++:   INTERPROCEDURAL_OPTIMIZATION property will be ignored for target
+C/C++:   'png_static'.
+C/C++: This warning is for project developers.  Use -Wno-dev to suppress it.
+C/C++: CMake Warning (dev) at rpcs3/3rdparty/pugixml/CMakeLists.txt:130 (add_library):
+C/C++:   Policy CMP0069 is not set: INTERPROCEDURAL_OPTIMIZATION is enforced when
+C/C++:   enabled.  Run "cmake --help-policy CMP0069" for policy details.  Use the
+C/C++:   cmake_policy command to set the policy and suppress this warning.
+C/C++:   INTERPROCEDURAL_OPTIMIZATION property will be ignored for target
+C/C++:   'pugixml-static'.
+C/C++: This warning is for project developers.  Use -Wno-dev to suppress it.
+C/C++: CMake Warning (dev) at rpcs3/3rdparty/libusb/libusb.cmake:13 (add_library):
+C/C++:   Policy CMP0069 is not set: INTERPROCEDURAL_OPTIMIZATION is enforced when
+C/C++:   enabled.  Run "cmake --help-policy CMP0069" for policy details.  Use the
+C/C++:   cmake_policy command to set the policy and suppress this warning.
+C/C++:   INTERPROCEDURAL_OPTIMIZATION property will be ignored for target
+C/C++:   'usb-1.0-static'.
+C/C++: Call Stack (most recent call first):
+C/C++:   rpcs3/3rdparty/libusb/CMakeLists.txt:25 (include)
+C/C++: This warning is for project developers.  Use -Wno-dev to suppress it.
+C/C++: CMake Warning (dev) at rpcs3/3rdparty/hidapi/hidapi/libusb/CMakeLists.txt:5 (add_library):
+C/C++:   Policy CMP0069 is not set: INTERPROCEDURAL_OPTIMIZATION is enforced when
+C/C++:   enabled.  Run "cmake --help-policy CMP0069" for policy details.  Use the
+C/C++:   cmake_policy command to set the policy and suppress this warning.
+C/C++:   INTERPROCEDURAL_OPTIMIZATION property will be ignored for target
+C/C++:   'hidapi_libusb'.
+C/C++: This warning is for project developers.  Use -Wno-dev to suppress it.
+C/C++: CMake Warning (dev) at rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt:99 (add_library):
+C/C++:   Policy CMP0069 is not set: INTERPROCEDURAL_OPTIMIZATION is enforced when
+C/C++:   enabled.  Run "cmake --help-policy CMP0069" for policy details.  Use the
+C/C++:   cmake_policy command to set the policy and suppress this warning.
+C/C++:   INTERPROCEDURAL_OPTIMIZATION property will be ignored for target 'xxhash'.
+C/C++: This warning is for project developers.  Use -Wno-dev to suppress it.
+
+> Task :app:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :app:generateReleaseLintVitalReportModel
+
+> Task :app:buildCMakeRelease[arm64-v8a] FAILED
+C/C++: ninja: Entering directory `/workspaces/aps3x/app/.cxx/Release/3j5b45n6/arm64-v8a'
+C/C++: : && /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android28 --sysroot=/home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -fPIC -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -O3 -fomit-frame-pointer -O3 -DNDEBUG  -flto=thin  -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments  -Wl,--gc-sections   -Wl,-z,max-page-size=16384 -flto=thin -Wl,--icf=all -Wl,--gc-sections -fuse-ld=gold -shared -Wl,-soname,liblang_System.so -o /workspaces/aps3x/app/build/intermediates/cxx/Release/3j5b45n6/obj/arm64-v8a/liblang_System.so CMakeFiles/lang_System.dir/lang_System.cpp.o  -latomic -lm && :
+C/C++: /usr/bin/ld.gold: error: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/LLVMgold.so: could not load plugin library: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/LLVMgold.so: cannot open shared object file: No such file or directory
+C/C++: /usr/bin/ld.gold: fatal error: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/28/crtbegin_so.o: unsupported ELF machine number 183
+C/C++: clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+C/C++: [5/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/error_private.c.o
+C/C++: [6/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/pool.c.o
+C/C++: [7/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/entropy_common.c.o
+C/C++: [8/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/fse_decompress.c.o
+C/C++: [9/4544] Building CXX object CMakeFiles/hardware_ProcessorInfo.dir/hardware_ProcessorInfo.cpp.o
+C/C++: ninja: build stopped: subcommand failed.
+
+> Task :app:lintVitalAnalyzeRelease
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeRelease[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `/workspaces/aps3x/app/.cxx/Release/3j5b45n6/arm64-v8a'
+  [0/2] Re-checking globbed directories...
+  [1/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/debug.c.o
+  [2/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/threading.c.o
+  [3/4544] Building CXX object CMakeFiles/lang_System.dir/lang_System.cpp.o
+  [4/4544] Linking CXX shared library /workspaces/aps3x/app/build/intermediates/cxx/Release/3j5b45n6/obj/arm64-v8a/liblang_System.so
+  FAILED: /workspaces/aps3x/app/build/intermediates/cxx/Release/3j5b45n6/obj/arm64-v8a/liblang_System.so 
+  : && /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android28 --sysroot=/home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -fPIC -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -O3 -fomit-frame-pointer -O3 -DNDEBUG  -flto=thin  -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments  -Wl,--gc-sections   -Wl,-z,max-page-size=16384 -flto=thin -Wl,--icf=all -Wl,--gc-sections -fuse-ld=gold -shared -Wl,-soname,liblang_System.so -o /workspaces/aps3x/app/build/intermediates/cxx/Release/3j5b45n6/obj/arm64-v8a/liblang_System.so CMakeFiles/lang_System.dir/lang_System.cpp.o  -latomic -lm && :
+  /usr/bin/ld.gold: error: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/LLVMgold.so: could not load plugin library: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/LLVMgold.so: cannot open shared object file: No such file or directory
+  /usr/bin/ld.gold: fatal error: /home/codespace/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/28/crtbegin_so.o: unsupported ELF machine number 183
+  clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+  [5/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/error_private.c.o
+  [6/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/pool.c.o
+  [7/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/entropy_common.c.o
+  [8/4544] Building C object rpcs3/3rdparty/zstd/EXLUDE_FROM_ALL/lib/CMakeFiles/libzstd_static.dir/__/__/__/lib/common/fse_decompress.c.o
+  [9/4544] Building CXX object CMakeFiles/hardware_ProcessorInfo.dir/hardware_ProcessorInfo.cpp.o
+  ninja: build stopped: subcommand failed.
+  
+  C++ build system [build] failed while executing:
+      /home/codespace/Android/Sdk/cmake/3.22.1/bin/ninja \
+        -C \
+        /workspaces/aps3x/app/.cxx/Release/3j5b45n6/arm64-v8a \
+        emu \
+        file_redirect_hook \
+        gsl_alloc_hook \
+        hardware_ProcessorInfo \
+        hook_impl \
+        lang_System \
+        llvm-min-tblgen \
+        llvm-tblgen \
+        main_hook
+    from /workspaces/aps3x/app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 58s
+20 actionable tasks: 10 executed, 10 from cache

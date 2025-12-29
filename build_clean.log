@@ -1,0 +1,39 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel UP-TO-DATE
+> Task :app:lintVitalAnalyzeRelease UP-TO-DATE
+> Task :app:lintVitalReportRelease
+
+> Task :app:configureCMakeRelease[arm64-v8a]
+C/C++: -- Dependency: adding libc (Android target detected)
+C/C++: ** AsmJit Summary **
+C/C++:    ASMJIT_DIR=/workspaces/aps3x/app/src/main/cpp/rpcs3/3rdparty/asmjit/asmjit
+C/C++:    ASMJIT_TEST=FALSE
+C/C++:    ASMJIT_TARGET_TYPE=EMBED
+C/C++:    ASMJIT_DEPS=c
+C/C++:    ASMJIT_LIBS=c
+C/C++:    ASMJIT_CFLAGS=-DASMJIT_STATIC;-DASMJIT_NO_DEPRECATED
+C/C++:    ASMJIT_PRIVATE_CFLAGS=-Wall;-Wextra;-Wconversion;-fno-math-errno;-fno-threadsafe-statics;-fno-semantic-interposition;-DASMJIT_STATIC;-DASMJIT_NO_DEPRECATED
+C/C++:    ASMJIT_PRIVATE_CFLAGS_DBG=
+C/C++:    ASMJIT_PRIVATE_CFLAGS_REL=-O2;-fmerge-all-constants
+
+> Task :app:lintVitalRelease
+> Task :app:buildCMakeRelease[arm64-v8a]
