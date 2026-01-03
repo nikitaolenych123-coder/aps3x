@@ -48,15 +48,14 @@ jobs:
       
       - name: Install Android NDK
         run: |
-          echo "Installing NDK (latest stable)..."
-          # Try to install a commonly available NDK version
-          sdkmanager "ndk;26.1.10909125" || sdkmanager --list | grep ndk
-          # Find the installed NDK
-          NDK_VERSION=$(ls $ANDROID_SDK_ROOT/ndk/ | sort -V | tail -n1)
-          echo "Found NDK: $NDK_VERSION"
+          echo "Installing NDK..."
+          # Install the most compatible NDK version
+          sdkmanager "ndk;25.2.9519653"
+          NDK_VERSION="25.2.9519653"
           echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
           echo "NDK_VERSION=$NDK_VERSION" >> $GITHUB_ENV
+          echo "✅ NDK $NDK_VERSION installed"
           ls -la $ANDROID_SDK_ROOT/ndk/
       
       - name: Verify LLVM/Clang and Optimizations
@@ -134,12 +133,11 @@ jobs:
           echo "Building APK..."
           ./gradlew assembleRelease \
             --parallel \
-            --max-workers=4 \
+            --max-workers=2 \
             --no-daemon \
-            --stacktrace \
-            --info || (echo "Build failed!" && exit 1)
+            --stacktrace
         env:
-          GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC
       
       - name: Verify APK and Get Info
         if: success()

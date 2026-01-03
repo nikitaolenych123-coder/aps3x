@@ -19,10 +19,12 @@ android {
         externalNativeBuild {
             cmake {
                 abiFilters 'arm64-v8a'
-                // Poco F6 aggressive optimization flags
-                cppFlags '-Ofast', '-flto=thin', '-fomit-frame-pointer', '-ffast-math', 
-                         '-funroll-loops', '-fvectorize', '-fassociative-math',
-                         '-march=armv9-a+sve+sve2', '-mtune=cortex-x4', '-mcpu=cortex-x4'
+                // NOTE: Conservative flags here for CI/build compatibility
+                // The real aggressive optimizations (ARMv9-A, Cortex-X4, -Ofast, LTO)
+                // are in app/src/main/cpp/CMakeLists.txt where they matter most
+                cppFlags '-O3', '-fomit-frame-pointer', '-ffast-math', 
+                         '-funroll-loops', '-fvectorize',
+                         '-march=armv8.2-a+crypto+dotprod', '-mtune=cortex-a76'
                 arguments '-DANDROID_STL=c++_shared',
                           '-DCMAKE_BUILD_TYPE=Release',
                           '-DENABLE_POCO_F6_OPTIMIZATIONS=ON',
@@ -55,15 +57,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
             
-            // Aggressive native optimizations
+            // Conservative native optimizations for build.gradle (for CI compatibility)
+            // Aggressive optimizations are in CMakeLists.txt
             externalNativeBuild {
                 cmake {
-                    cppFlags '-Ofast', '-flto=thin', '-fomit-frame-pointer', '-ffast-math',
-                             '-funroll-loops', '-fvectorize', '-march=armv9-a+sve+sve2',
-                             '-mtune=cortex-x4', '-mcpu=cortex-x4'
+                    cppFlags '-O3', '-fomit-frame-pointer', '-ffast-math',
+                             '-funroll-loops', '-fvectorize', '-march=armv8.2-a+crypto+dotprod',
+                             '-mtune=cortex-a76'
                     arguments '-DCMAKE_BUILD_TYPE=Release',
-                              '-DCMAKE_C_FLAGS_RELEASE=-Ofast -flto=thin -DNDEBUG',
-                              '-DCMAKE_CXX_FLAGS_RELEASE=-Ofast -flto=thin -DNDEBUG'
+                              '-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG',
+                              '-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG'
                 }
             }
         }
