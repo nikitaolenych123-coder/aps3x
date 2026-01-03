@@ -30,10 +30,19 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
       
+      - name: Install Android Build Tools
+        run: |
+          echo "Installing platform-tools and cmake..."
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" || echo "Warning: Some tools may not install"
+          sdkmanager "cmake;3.22.1" || echo "CMake installation attempted"
+      
       - name: Install Android NDK r27
         run: |
-          sdkmanager "ndk;27.3.13750724"
+          echo "Installing NDK 27.3.13750724..."
+          sdkmanager "ndk;27.3.13750724" || echo "Warning: NDK installation may have issues"
           echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> $GITHUB_ENV
+          ls -la $ANDROID_SDK_ROOT/ndk/ || echo "NDK directory check"
       
       - name: Verify LLVM/Clang and Optimizations
         run: |
@@ -57,6 +66,8 @@ jobs:
           echo "✅ REAL_STEEL_FPS_UNLOCK=1"
           ls -la app/build.gradle
           grep -A 5 "ARMv9-A" app/src/main/cpp/CMakeLists.txt || echo "Checking optimizations..."
+          echo "Gradle version:"
+          ./gradlew --version || echo "gradlew not executable yet"
       
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -82,15 +93,28 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
       
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> local.properties
+          cat local.properties
+      
       - name: Build Optimized Release APK
         run: |
           export JAVA_HOME=$JAVA_HOME_17_X64
           export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          echo "Environment check:"
+          echo "JAVA_HOME: $JAVA_HOME"
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+          echo "Building APK..."
           ./gradlew assembleRelease \
             --parallel \
             --max-workers=4 \
             --no-daemon \
-            --stacktrace
+            --stacktrace \
+            --info || (echo "Build failed, showing last 100 lines of output" && exit 1)
         env:
           GRADLE_OPTS: -Xmx8g -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -Dorg.gradle.jvmargs=-Xmx6g
       
