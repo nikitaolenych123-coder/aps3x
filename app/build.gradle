@@ -1,0 +1,107 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'aenu.aps3e'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "aenu.aps3e"
+        //applicationId "aenu.aps3e.premium"
+
+        minSdk 28
+        targetSdk 34
+        versionCode 19
+        versionName "1.19a-poco-f6-optimized"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                abiFilters 'arm64-v8a'
+                // Poco F6 aggressive optimization flags
+                cppFlags '-Ofast', '-flto=thin', '-fomit-frame-pointer', '-ffast-math', 
+                         '-funroll-loops', '-fvectorize', '-fassociative-math',
+                         '-march=armv9-a+sve+sve2', '-mtune=cortex-x4', '-mcpu=cortex-x4'
+                arguments '-DANDROID_STL=c++_shared',
+                          '-DCMAKE_BUILD_TYPE=Release',
+                          '-DENABLE_POCO_F6_OPTIMIZATIONS=ON',
+                          '-DTARGET_REAL_STEEL=ON'
+            }
+        }
+
+        sourceSets{
+            main {
+                //jniLibs.srcDirs = ['src/main/lib']
+            }
+        }
+        
+        // Native library optimization
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    signingConfigs {
+        release {
+        }
+        debug {
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            
+            // Aggressive native optimizations
+            externalNativeBuild {
+                cmake {
+                    cppFlags '-Ofast', '-flto=thin', '-fomit-frame-pointer', '-ffast-math',
+                             '-funroll-loops', '-fvectorize', '-march=armv9-a+sve+sve2',
+                             '-mtune=cortex-x4', '-mcpu=cortex-x4'
+                    arguments '-DCMAKE_BUILD_TYPE=Release',
+                              '-DCMAKE_C_FLAGS_RELEASE=-Ofast -flto=thin -DNDEBUG',
+                              '-DCMAKE_CXX_FLAGS_RELEASE=-Ofast -flto=thin -DNDEBUG'
+                }
+            }
+        }
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+
+    packaging{
+        jniLibs.useLegacyPackaging = true
+    }
+    
+    // Build optimization
+    buildFeatures {
+        buildConfig = true
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.preference
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+}
