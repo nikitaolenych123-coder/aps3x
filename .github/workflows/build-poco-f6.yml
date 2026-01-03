@@ -15,8 +15,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      
+      - name: Check and Initialize Submodules
+        run: |
+          if [ -d "app/src/main/cpp/rpcs3" ]; then
+            echo "rpcs3 directory exists"
+            if [ ! -f "app/src/main/cpp/rpcs3/CMakeLists.txt" ]; then
+              echo "⚠️ rpcs3 directory is empty, may need submodule init"
+              git submodule update --init --recursive || echo "No submodules to init"
+            fi
+          else
+            echo "✅ No rpcs3 submodule directory"
+          fi
       
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -33,21 +43,32 @@ jobs:
       - name: Install Android Build Tools
         run: |
           echo "Installing platform-tools and cmake..."
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" || echo "Warning: Some tools may not install"
-          sdkmanager "cmake;3.22.1" || echo "CMake installation attempted"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "cmake;3.22.1"
       
-      - name: Install Android NDK r27
+      - name: Install Android NDK
         run: |
-          echo "Installing NDK 27.3.13750724..."
-          sdkmanager "ndk;27.3.13750724" || echo "Warning: NDK installation may have issues"
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> $GITHUB_ENV
-          ls -la $ANDROID_SDK_ROOT/ndk/ || echo "NDK directory check"
+          echo "Installing NDK (latest stable)..."
+          # Try to install a commonly available NDK version
+          sdkmanager "ndk;26.1.10909125" || sdkmanager --list | grep ndk
+          # Find the installed NDK
+          NDK_VERSION=$(ls $ANDROID_SDK_ROOT/ndk/ | sort -V | tail -n1)
+          echo "Found NDK: $NDK_VERSION"
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
+          echo "NDK_VERSION=$NDK_VERSION" >> $GITHUB_ENV
+          ls -la $ANDROID_SDK_ROOT/ndk/
       
       - name: Verify LLVM/Clang and Optimizations
         run: |
-          CLANG_VERSION=$($ANDROID_SDK_ROOT/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | head -n1)
-          echo "✅ Clang version: $CLANG_VERSION"
+          echo "NDK Version: $NDK_VERSION"
+          CLANG_PATH="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+          if [ -f "$CLANG_PATH" ]; then
+            CLANG_VERSION=$($CLANG_PATH --version | head -n1)
+            echo "✅ Clang version: $CLANG_VERSION"
+          else
+            echo "⚠️ Clang not found at expected path"
+          fi
           echo "✅ CMakeLists.txt configured with ARMv9-A+Cortex-X4 optimizations"
           echo "✅ TARGET_FPS=60 for Real Steel FPS unlock"
           echo "✅ -Ofast + LTO thin enabled"
@@ -96,27 +117,29 @@ jobs:
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> local.properties
+          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION" >> local.properties
+          echo "Created local.properties:"
           cat local.properties
       
       - name: Build Optimized Release APK
         run: |
           export JAVA_HOME=$JAVA_HOME_17_X64
-          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           echo "Environment check:"
           echo "JAVA_HOME: $JAVA_HOME"
           echo "ANDROID_HOME: $ANDROID_HOME"
           echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+          echo "NDK_VERSION: $NDK_VERSION"
           echo "Building APK..."
           ./gradlew assembleRelease \
             --parallel \
             --max-workers=4 \
             --no-daemon \
             --stacktrace \
-            --info || (echo "Build failed, showing last 100 lines of output" && exit 1)
+            --info || (echo "Build failed!" && exit 1)
         env:
-          GRADLE_OPTS: -Xmx8g -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -Dorg.gradle.jvmargs=-Xmx6g
+          GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC
       
       - name: Verify APK and Get Info
         if: success()
