@@ -11,42 +11,65 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("aps3e")
 
-# === Poco F6 Optimizations (Conservative) ===
-add_compile_options(-march=armv8.2-a+crypto+dotprod)
-add_compile_options(-mcpu=cortex-a76)
-add_compile_options(-mtune=cortex-a76)
-add_compile_options(-O3)
+# === Poco F6 Optimizations (AGGRESSIVE - Real Steel 60 FPS) ===
+# ARMv9-A architecture with Cortex-X4 optimizations for Snapdragon 8s Gen 3
+add_compile_options(-march=armv9-a+sve+sve2+crypto+dotprod+fp16)
+add_compile_options(-mcpu=cortex-x4)
+add_compile_options(-mtune=cortex-x4)
+
+# Maximum optimization level
+add_compile_options(-Ofast)  # Aggressive optimizations beyond -O3
+add_compile_options(-flto=thin)  # Link Time Optimization
 add_compile_options(-fomit-frame-pointer)
-add_compile_options(-ffast-math)
-add_compile_options(-funroll-loops)
+add_compile_options(-ffast-math)  # Fast floating-point math
+add_compile_options(-funroll-loops)  # Loop unrolling
+add_compile_options(-fvectorize)  # Auto-vectorization with SVE2
+add_compile_options(-fassociative-math)  # Allow math reassociation
+add_compile_options(-freciprocal-math)  # Fast reciprocal approximations
+add_compile_options(-fno-signed-zeros)  # Treat signed zeros as unsigned
+add_compile_options(-fno-trapping-math)  # Assume no FP exceptions
 
-# Disable debugging
+# Disable debugging for maximum performance
 add_compile_definitions(NDEBUG RELEASE_BUILD NO_DEBUG_LOG DISABLE_TELEMETRY)
-add_compile_definitions(TARGET_FPS=30 FRAME_PACING_STRICT)
+add_compile_definitions(TARGET_FPS=60 FRAME_PACING_RELAXED)  # 60 FPS target for Real Steel
+add_compile_definitions(REAL_STEEL_FPS_UNLOCK=1)
 
-# Additional Adreno 735 GPU optimizations
-add_compile_options(-DADRENO_735_OPTIMIZED=1)
-add_compile_options(-DVK_ENABLE_BETA_EXTENSIONS=1)
+# Adreno 735 GPU optimizations
+add_compile_definitions(ADRENO_735_OPTIMIZED=1)
+add_compile_definitions(VK_ENABLE_BETA_EXTENSIONS=1)
+add_compile_definitions(ENABLE_SHADER_CACHE=1)
+add_compile_definitions(ADRENO_WAVEFRONT_SIZE=128)
 
-# Memory optimizations for LPDDR5X
-add_compile_options(-DLPDDR5X_OPTIMIZED=1)
-add_compile_options(-DCACHE_LINE_SIZE=128)  # Snapdragon 8s Gen 3 cache line
+# Memory optimizations for LPDDR5X (8533 MT/s)
+add_compile_definitions(LPDDR5X_OPTIMIZED=1)
+add_compile_definitions(CACHE_LINE_SIZE=128)  # Snapdragon 8s Gen 3 cache line
+add_compile_definitions(ENABLE_HUGE_PAGES=1)
+add_compile_definitions(PREFETCH_ENABLED=1)
 
 add_compile_options(-stdlib=libc++)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_link_options(-Wl,-z,max-page-size=16384)
-add_link_options(-Wl,--gc-sections)
-add_link_options(-Wl,--icf=all)
+# Aggressive link-time optimizations for Poco F6
+add_link_options(-flto=thin)  # Link Time Optimization
+add_link_options(-Wl,-z,max-page-size=16384)  # 16KB pages for ARM64
+add_link_options(-Wl,--gc-sections)  # Remove unused sections
+add_link_options(-Wl,--icf=all)  # Identical Code Folding
+add_link_options(-Wl,-O3)  # Linker optimization level
+add_link_options(-Wl,--as-needed)  # Only link needed libraries
+add_link_options(-Wl,--strip-all)  # Strip all symbols for smaller binary
 
 set(CMAKE_CXX_STANDARD 20)
 
 project(aps3e LANGUAGES C CXX)
 
 add_library(lang_System SHARED lang_System.cpp)
+target_compile_options(lang_System PRIVATE -Ofast -flto=thin)
+target_link_options(lang_System PRIVATE -flto=thin)
 
 add_library(hardware_ProcessorInfo SHARED hardware_ProcessorInfo.cpp)
 target_link_libraries(hardware_ProcessorInfo PRIVATE vulkan)
+target_compile_options(hardware_ProcessorInfo PRIVATE -Ofast -flto=thin)
+target_link_options(hardware_ProcessorInfo PRIVATE -flto=thin)
 
 add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
 
