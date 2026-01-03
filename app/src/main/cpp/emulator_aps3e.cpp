@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: WTFPL
+// Poco F6 Optimizations
+#include "poco_f6_optimizations.h"
+#include "adreno735_optimizations.h"
+#include "real_steel_fps_patch.h"
+
 #include <android/log.h>
 #include <jni.h>
 #include <filesystem>
