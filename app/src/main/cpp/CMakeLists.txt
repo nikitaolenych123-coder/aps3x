@@ -12,12 +12,19 @@ cmake_minimum_required(VERSION 3.22.1)
 project("aps3e")
 
 # === Poco F6 Optimizations (AGGRESSIVE - Real Steel 60 FPS) ===
+# WARNING: These are VERY AGGRESSIVE optimizations specifically for Poco F6 (Snapdragon 8s Gen 3)
+# These flags may cause build failures on other devices or with older toolchains
+# For other devices, use conservative settings or adjust flags accordingly
+#
 # ARMv9-A architecture with Cortex-X4 optimizations for Snapdragon 8s Gen 3
 add_compile_options(-march=armv9-a+sve+sve2+crypto+dotprod+fp16)
 add_compile_options(-mcpu=cortex-x4)
 add_compile_options(-mtune=cortex-x4)
 
 # Maximum optimization level
+# WARNING: -Ofast enables aggressive optimizations that may break IEEE floating-point compliance
+# This is intentional for maximum performance, but may cause issues in some games
+# If stability issues occur, consider using -O3 -ffast-math instead
 add_compile_options(-Ofast)  # Aggressive optimizations beyond -O3
 add_compile_options(-flto=thin)  # Link Time Optimization
 add_compile_options(-fomit-frame-pointer)
